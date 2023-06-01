@@ -15,7 +15,8 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (300, 300);
+    setSize (300,400);
+    
     //add sliders and labels
     addAndMakeVisible(widthLowerSlider);
     widthLowerSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
@@ -42,6 +43,19 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
     widthHigherLabel.setText("Higher frequency width", juce::dontSendNotification);
     widthHigherLabel.setFont(juce::Font("Times New Roman", 15.0f, juce::Font::plain));
     widthHigherLabel.attachToComponent (&widthHigherSlider, false);
+    
+    //add sliders and labels
+    addAndMakeVisible(cutoffFrequencySlider);
+    cutoffFrequencySlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
+    cutoffFrequencySlider.setRange (200.0, 8000.0);
+    cutoffFrequencySlider.setValue(500.0);
+    cutoffFrequencyAttach.reset (new juce::AudioProcessorValueTreeState::SliderAttachment (valueTreeState, "cutoffFrequency", cutoffFrequencySlider));
+
+    
+    addAndMakeVisible(cutoffFrequencyLabel);
+    cutoffFrequencyLabel.setText("Filter cutoff frequency", juce::dontSendNotification);
+    cutoffFrequencyLabel.setFont(juce::Font("Times New Roman", 15.0f, juce::Font::plain));
+    cutoffFrequencyLabel.attachToComponent (&cutoffFrequencySlider, false);
 }
 
 StereoWidenerAudioProcessorEditor::~StereoWidenerAudioProcessorEditor()
@@ -56,7 +70,7 @@ void StereoWidenerAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setFont (juce::Font ("Times New Roman", 20.0f, juce::Font::bold));
     g.setColour (juce::Colours::lightgrey);
-    g.drawText ("StereoWidener", 150, 250, 180, 50, true);
+    g.drawText ("StereoWidener", 150, 350, 180, 50, true);
 }
 
 void StereoWidenerAudioProcessorEditor::resized()
@@ -66,6 +80,6 @@ void StereoWidenerAudioProcessorEditor::resized()
     auto sliderLeft = 30;
     widthLowerSlider.setBounds (sliderLeft , 50, getWidth() - sliderLeft - 10, 80);
     widthHigherSlider.setBounds (sliderLeft , 150, getWidth() - sliderLeft - 10, 80);
-
+    cutoffFrequencySlider.setBounds (sliderLeft , 250, getWidth() - sliderLeft - 10, 80);
     
 }

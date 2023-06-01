@@ -62,6 +62,7 @@ public:
     juce::AudioProcessorValueTreeState parameters;
     std::atomic<float>* widthLower; // stereo width (0 - original, 100 - max widening)
     std::atomic<float>* widthHigher;
+    std::atomic<float>* cutoffFrequency;
     const int numFreqBands = 2;
     Panner* pan;
     LinkwitzCrossover** filters;
@@ -73,9 +74,11 @@ private:
     float targetDecaydB = 10.;
     float* pannerInputs;
     float* temp_output;
-    float prevWidthLower = 0.0f;
-    float prevWidthHigher = 0.0f;
+    float prevWidthLower;
+    float prevWidthHigher;
+    float prevCutoffFreq;
     const float staticGain = (-1 + std::sqrt(5)) / 2.;
+    const int numChannels = getMainBusNumInputChannels();
     enum{
         vnLenMs = 30,
     };

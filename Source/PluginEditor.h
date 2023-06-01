@@ -33,8 +33,11 @@ private:
     juce::Slider widthLowerSlider;
     juce::Label widthHigherLabel;
     juce::Slider widthHigherSlider;
+    juce::Slider cutoffFrequencySlider;
+    juce::Label cutoffFrequencyLabel;
     std::unique_ptr <juce::AudioProcessorValueTreeState::SliderAttachment> widthLowerAttach;
     std::unique_ptr <juce::AudioProcessorValueTreeState::SliderAttachment> widthHigherAttach;
+    std::unique_ptr <juce::AudioProcessorValueTreeState::SliderAttachment> cutoffFrequencyAttach;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StereoWidenerAudioProcessorEditor)

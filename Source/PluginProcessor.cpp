@@ -33,11 +33,19 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
      0.0f,   // minimum value
      100.0f,   // maximum value
      0.0f),
+    std::make_unique<juce::AudioParameterFloat>
+    ("cutoffFrequency", // parameterID
+     "Filter cutoff frequency", // parameter name
+     200.0f,   // minimum value
+     8000.0f,   // maximum value
+     0.0f),
     }) // default value)
 #endif
 {
     //set user defined parameters
     widthLower = parameters.getRawParameterValue("widthLower");
+    widthHigher = parameters.getRawParameterValue("widthHigher");
+    cutoffFrequency = parameters.getRawParameterValue("cutoffFrequency");
 
 }
 
@@ -120,7 +128,6 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    const int numChannels = getMainBusNumInputChannels();
     vnSeq = new VelvetNoise[numChannels];
     pan = new Panner[numFreqBands * numChannels];
     filters = new LinkwitzCrossover* [numFreqBands * numChannels];
@@ -152,6 +159,7 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     inputData = std::vector<std::vector<float>>(samplesPerBlock, std::vector<float>(numChannels, 0.0f));
     prevWidthLower = 0.f;
     prevWidthHigher = 0.0f;
+    prevCutoffFreq = 500.0;
 
 }
 
@@ -201,8 +209,20 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
         pan[2].update(*widthHigher/100.0);
         pan[3].update(1.0 - *widthLower/100.0);
         prevWidthHigher = *widthHigher;
-
     }
+    
+    if (prevCutoffFreq != *cutoffFrequency){
+        int count = 0;
+        for(int k = 0; k < numChannels; k++){
+            for (int i = 0; i < numFreqBands; i++){
+                for (int j = 0; j < numChannels; j++)
+                    filters[count][j].update(*cutoffFrequency);
+                count++;
+            }
+        }
+        prevCutoffFreq = *cutoffFrequency;
+    }
+    
     
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
