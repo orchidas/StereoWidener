@@ -15,19 +15,33 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (300, 200);
+    setSize (300, 300);
     //add sliders and labels
-    addAndMakeVisible(widthSlider);
-    widthSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    widthSlider.setRange (0, 100.0);
-    widthSlider.setValue(0.0);
-    widthAttach.reset (new juce::AudioProcessorValueTreeState::SliderAttachment (valueTreeState, "width", widthSlider));
+    addAndMakeVisible(widthLowerSlider);
+    widthLowerSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
+    widthLowerSlider.setRange (0, 100.0);
+    widthLowerSlider.setValue(0.0);
+    widthLowerAttach.reset (new juce::AudioProcessorValueTreeState::SliderAttachment (valueTreeState, "widthLower", widthLowerSlider));
 
     
-    addAndMakeVisible(widthLabel);
-    widthLabel.setText("Stereo Width", juce::dontSendNotification);
-    widthLabel.setFont(juce::Font("Times New Roman", 15.0f, juce::Font::plain));
-    widthLabel.attachToComponent (&widthSlider, false);
+    addAndMakeVisible(widthLowerLabel);
+    widthLowerLabel.setText("Lower frequency width", juce::dontSendNotification);
+    widthLowerLabel.setFont(juce::Font("Times New Roman", 15.0f, juce::Font::plain));
+    widthLowerLabel.attachToComponent (&widthLowerSlider, false);
+    
+    
+    //add sliders and labels
+    addAndMakeVisible(widthHigherSlider);
+    widthHigherSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
+    widthHigherSlider.setRange (0, 100.0);
+    widthHigherSlider.setValue(0.0);
+    widthHigherAttach.reset (new juce::AudioProcessorValueTreeState::SliderAttachment (valueTreeState, "widthHigher", widthHigherSlider));
+
+    
+    addAndMakeVisible(widthHigherLabel);
+    widthHigherLabel.setText("Higher frequency width", juce::dontSendNotification);
+    widthHigherLabel.setFont(juce::Font("Times New Roman", 15.0f, juce::Font::plain));
+    widthHigherLabel.attachToComponent (&widthHigherSlider, false);
 }
 
 StereoWidenerAudioProcessorEditor::~StereoWidenerAudioProcessorEditor()
@@ -42,7 +56,7 @@ void StereoWidenerAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setFont (juce::Font ("Times New Roman", 20.0f, juce::Font::bold));
     g.setColour (juce::Colours::lightgrey);
-    g.drawText ("StereoWidener", 150, 150, 180, 50, true);
+    g.drawText ("StereoWidener", 150, 250, 180, 50, true);
 }
 
 void StereoWidenerAudioProcessorEditor::resized()
@@ -50,5 +64,8 @@ void StereoWidenerAudioProcessorEditor::resized()
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
     auto sliderLeft = 30;
-    widthSlider.setBounds (sliderLeft , 50, getWidth() - sliderLeft - 10, 80);
+    widthLowerSlider.setBounds (sliderLeft , 50, getWidth() - sliderLeft - 10, 80);
+    widthHigherSlider.setBounds (sliderLeft , 150, getWidth() - sliderLeft - 10, 80);
+
+    
 }

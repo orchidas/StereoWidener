@@ -5,6 +5,10 @@
               pluginManufacturer="orchi" companyWebsite="www.orchi.com" cppLanguageStandard="17">
   <MAINGROUP id="Cr37Rz" name="StereoWidener">
     <GROUP id="{7E19498E-394C-C938-D3D4-281C6825972C}" name="Source">
+      <FILE id="RIzedn" name="LinkwitzCrossover.cpp" compile="1" resource="0"
+            file="../StereoWiidenerStandaloneDebug/Source/LinkwitzCrossover.cpp"/>
+      <FILE id="obYPka" name="LinkwitzCrossover.h" compile="0" resource="0"
+            file="../StereoWiidenerStandaloneDebug/Source/LinkwitzCrossover.h"/>
       <FILE id="oXwtwE" name="DelayLine.cpp" compile="1" resource="0" file="../StereoWiidenerStandaloneDebug/Source/DelayLine.cpp"/>
       <FILE id="JE69gI" name="DelayLine.h" compile="0" resource="0" file="../StereoWiidenerStandaloneDebug/Source/DelayLine.h"/>
       <FILE id="fNhVcs" name="Panner.cpp" compile="1" resource="0" file="../StereoWiidenerStandaloneDebug/Source/Panner.cpp"/>

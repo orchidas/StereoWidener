@@ -22,21 +22,35 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
                        ),
     parameters(*this, nullptr, juce::Identifier ("StereoWidener"),{
     std::make_unique<juce::AudioParameterFloat>
-    ("width", // parameterID
-     "Stereo Width", // parameter name
+    ("widthLower", // parameterID
+     "Lower frequency width", // parameter name
      0.0f,   // minimum value
      100.0f,   // maximum value
-     0.0f)
+     0.0f),
+    std::make_unique<juce::AudioParameterFloat>
+    ("widthHigher", // parameterID
+     "Higher frequency width", // parameter name
+     0.0f,   // minimum value
+     100.0f,   // maximum value
+     0.0f),
     }) // default value)
 #endif
 {
     //set user defined parameters
-    width = parameters.getRawParameterValue("width");
+    widthLower = parameters.getRawParameterValue("widthLower");
 
 }
 
 StereoWidenerAudioProcessor::~StereoWidenerAudioProcessor()
 {
+    delete [] pannerInputs;
+    delete [] temp_output;
+    delete [] pan;
+    delete [] vnSeq;
+    for (int i = 0; i < 2 * numFreqBands; i++){
+        delete [] filters[i];
+    }
+    
 }
 
 //==============================================================================
@@ -108,17 +122,36 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     // initialisation that you need..
     const int numChannels = getMainBusNumInputChannels();
     vnSeq = new VelvetNoise[numChannels];
-    pan = new Panner[numChannels];
+    pan = new Panner[numFreqBands * numChannels];
+    filters = new LinkwitzCrossover* [numFreqBands * numChannels];
+    temp_output = new float[numFreqBands];
     pannerInputs = new float[numChannels];
+    int count = 0;
 
     for(int k = 0; k < numChannels; k++){
+        
         vnSeq[k].initialize(sampleRate, vnLenMs, density, targetDecaydB);
-        pan[k].initialize();
         pannerInputs[k] = 0.f;
+
+        for (int i = 0; i < numFreqBands; i++){
+            pan[count].initialize();
+            temp_output[i] = 0.0;
+            filters[count] = new LinkwitzCrossover[numChannels];
+            
+           //0, 2 contains lowpass filter and 1, 3 contains highpass filter
+            for (int j = 0; j < numChannels; j++){
+                if (count % numChannels == 0)
+                    filters[count][j].initialize(sampleRate, "lowpass");
+                else
+                    filters[count][j].initialize(sampleRate, "highpass");
+            }
+            count++;
+        }
     }
     
     inputData = std::vector<std::vector<float>>(samplesPerBlock, std::vector<float>(numChannels, 0.0f));
-    prevWidth = 0.f;
+    prevWidthLower = 0.f;
+    prevWidthHigher = 0.0f;
 
 }
 
@@ -158,11 +191,18 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
 {
     juce::ScopedNoDenormals noDenormals;
     //update parameter
-    if (prevWidth != *width) {
-            pan[0].update(*width/100.0);
-            pan[1].update(1 - *width/100.0);
-            prevWidth = *width;
+    if (prevWidthLower != *widthLower) {
+            pan[0].update(*widthLower/100.0);
+            pan[1].update(1 - *widthLower/100.0);
+            prevWidthLower = *widthLower;
         }
+    
+    if (prevWidthHigher != *widthHigher){
+        pan[2].update(*widthHigher/100.0);
+        pan[3].update(1.0 - *widthLower/100.0);
+        prevWidthHigher = *widthHigher;
+
+    }
     
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -177,25 +217,36 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
             inputData[i][chan] = channelInData[i];
         }
     }
-        
+    
+    //process input to get output
     for (int i = 0; i < numSamples; i++){
-
+        int count = 0;
         for(int chan = 0; chan < totalNumOutputChannels; chan++){
+            //decorrelate input channel by convolving with VN sequence
+            float output = 0.0f;
             float vn_output = vnSeq[chan].process(inputData[i][chan]);
             //a gain multiplication is needed here for energy normalisation
             if (vn_output != 0.)
                 vn_output *= staticGain * (inputData[i][chan] / vn_output);
-            //send to panner
-            pannerInputs[0] = vn_output;
-            pannerInputs[1] = inputData[i][chan];
-            float *panner_output = pan[chan].process(pannerInputs);
+            
+            //process in frequency bands
+            for(int k = 0; k < numFreqBands; k++){
+                //filter input and VN output
+                float filtered_input = filters[k][chan].process(inputData[i][chan]);
+                float filtered_vn_output = filters[numFreqBands + k][chan].process(vn_output);
+                //send filtered signals to panner
+                pannerInputs[0] = filtered_vn_output;
+                pannerInputs[1] = filtered_input;
+                float *panner_output = pan[count++].process(pannerInputs);
+                temp_output[k] = panner_output[0] + panner_output[1];
+                output += temp_output[k];
+            }
             //output channels from panner are added
-            float output = panner_output[0] + panner_output[1];
             buffer.setSample(chan, i, output);
         }
     }
-    
 }
+    
 
 //==============================================================================
 bool StereoWidenerAudioProcessor::hasEditor() const

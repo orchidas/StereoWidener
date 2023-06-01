@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "VelvetNoise.h"
 #include "Panner.h"
+#include "LinkwitzCrossover.h"
 //==============================================================================
 /**
 */
@@ -59,9 +60,11 @@ public:
 
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
-    std::atomic<float>* width; // stereo width (0 - original, 100 - max widening)
+    std::atomic<float>* widthLower; // stereo width (0 - original, 100 - max widening)
+    std::atomic<float>* widthHigher;
+    const int numFreqBands = 2;
     Panner* pan;
-    
+    LinkwitzCrossover** filters;
 private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StereoWidenerAudioProcessor)
@@ -69,7 +72,9 @@ private:
     int density = 1000;
     float targetDecaydB = 10.;
     float* pannerInputs;
-    float prevWidth = 0.0f;
+    float* temp_output;
+    float prevWidthLower = 0.0f;
+    float prevWidthHigher = 0.0f;
     const float staticGain = (-1 + std::sqrt(5)) / 2.;
     enum{
         vnLenMs = 30,

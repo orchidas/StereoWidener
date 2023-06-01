@@ -29,9 +29,13 @@ private:
     // access the processor object that created it.
     StereoWidenerAudioProcessor& audioProcessor;
     juce::AudioProcessorValueTreeState& valueTreeState;
-    juce::Label widthLabel;
-    juce::Slider widthSlider;
-    std::unique_ptr <juce::AudioProcessorValueTreeState::SliderAttachment> widthAttach;
+    juce::Label widthLowerLabel;
+    juce::Slider widthLowerSlider;
+    juce::Label widthHigherLabel;
+    juce::Slider widthHigherSlider;
+    std::unique_ptr <juce::AudioProcessorValueTreeState::SliderAttachment> widthLowerAttach;
+    std::unique_ptr <juce::AudioProcessorValueTreeState::SliderAttachment> widthHigherAttach;
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StereoWidenerAudioProcessorEditor)
 };
