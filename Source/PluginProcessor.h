@@ -12,6 +12,7 @@
 #include "VelvetNoise.h"
 #include "Panner.h"
 #include "LinkwitzCrossover.h"
+#include "BiquadCascade.h"
 //==============================================================================
 /**
 */
@@ -71,14 +72,16 @@ private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StereoWidenerAudioProcessor)
     const int numChannels = getMainBusNumInputChannels();
-    const float PI = std::acos(-1);     //PI
+    const float PI = std::acos(-1);
     
-    VelvetNoise* vnSeq;
+    VelvetNoise* velvetSequence;
+    BiquadCascade* allpassCascade;
     Panner* pan;
     LinkwitzCrossover** filters;
     int density = 1000;
     float targetDecaydB = 10.;
-    bool logDistribution = true;
+    bool logDistribution = true;        //whether to concentrate VN impulses at the beginning
+    bool allpassDecorr = false;          //whether to use allpass or velvet noise for decorrelation
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
@@ -87,8 +90,10 @@ private:
     float prevCutoffFreq, curCutoffFreq;
     float smooth_factor;   //one pole filter for parameter update
     enum{
-        vnLenMs = 30,
+        vnLenMs = 15,
         smoothingTimeMs = 5,
+        maxGroupDelayMs = 30,
+        numBiquads = 200,
     };
     std::vector<std::vector<float>> inputData;
 

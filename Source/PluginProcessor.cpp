@@ -118,7 +118,11 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    vnSeq = new VelvetNoise[numChannels];
+    if (allpassDecorr)
+        allpassCascade = new BiquadCascade[numChannels];
+    else
+        velvetSequence = new VelvetNoise[numChannels];
+    
     pan = new Panner[numFreqBands * numChannels];
     filters = new LinkwitzCrossover* [numFreqBands * numChannels];
     gain_multiplier = new float[numFreqBands];
@@ -128,17 +132,26 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
 
     for(int k = 0; k < numChannels; k++){
         
-        vnSeq[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
+        //initialise decorrelator
+        if (allpassDecorr)
+            allpassCascade[k].initialize(numBiquads, sampleRate, maxGroupDelayMs);
+        else
+            velvetSequence[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
+        
+        //initialise panner inputs
         pannerInputs[k] = 0.f;
 
         for (int i = 0; i < numFreqBands; i++){
             temp_output[i] = 0.0;
             gain_multiplier[i] =  (i == 0) ? 0.f : 1.f;
+            
+            //initialise panner
             pan[count].initialize();
             filters[count] = new LinkwitzCrossover[numChannels];
             
            //0, 2 contains lowpass filter and 1, 3 contains highpass filter
             for (int j = 0; j < numChannels; j++){
+                //initialise filters
                 if (count % numChannels == 0)
                     filters[count][j].initialize(sampleRate, "lowpass");
                 else
@@ -166,9 +179,13 @@ void StereoWidenerAudioProcessor::releaseResources()
     delete [] pannerInputs;
     delete [] temp_output;
     delete [] pan;
-    delete [] vnSeq;
     delete [] gain_multiplier;
-    for (int i = 0; i < 2 * numFreqBands; i++){
+    if (allpassDecorr)
+        delete [] allpassCascade;
+    else
+        delete [] velvetSequence;
+    
+    for (int i = 0; i < numChannels * numFreqBands; i++){
         delete [] filters[i];
     }
     
@@ -273,26 +290,33 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     for (int i = 0; i < numSamples; i++){
         count = 0;
         for(int chan = 0; chan < totalNumOutputChannels; chan++){
-            //decorrelate input channel by convolving with VN sequence
             float output = 0.0f;
-            float vn_output = vnSeq[chan].process(inputData[i][chan]);
+            float decorr_output = 0.0f;
+            
+            //decorrelate input channel by convolving with VN sequence
+            if (allpassDecorr)
+                decorr_output = allpassCascade[chan].process(inputData[i][chan]);
+            //or by passing through allpass cascade
+            else
+                decorr_output = velvetSequence[chan].process(inputData[i][chan]);
+            
             float filtered_input[numFreqBands];
-            float filtered_vn_output[numFreqBands];
+            float filtered_decorr_output[numFreqBands];
             
             //process in frequency bands
             for(int k = 0; k < numFreqBands; k++){
                 //filter input and VN output
                 filtered_input[k] = filters[k][chan].process(inputData[i][chan]);
-                filtered_vn_output[k] = filters[numFreqBands + k][chan].process(vn_output);
+                filtered_decorr_output[k] = filters[numFreqBands + k][chan].process(decorr_output);
             }
             //try adding a gain to the decorrelated output to balance input and output energy
-            //float gain = calculateGainForSample(filtered_input, filtered_vn_output);
+            //float gain = calculateGainForSample(filtered_input, filtered_decorr_output);
         
             for (int k = 0; k < numFreqBands; k++){
                 //gain adjust the filtered decorrelator output
-                //filtered_vn_output[k] *= gain;
+                //filtered_decorr_output[k] *= gain;
                 //send filtered signals to panner
-                pannerInputs[0] = filtered_vn_output[k];
+                pannerInputs[0] = filtered_decorr_output[k];
                 pannerInputs[1] = filtered_input[k];
                 float *panner_output = pan[count++].process(pannerInputs);
                 temp_output[k] = panner_output[0] + panner_output[1];
@@ -305,11 +329,11 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
 }
     
 
-float StereoWidenerAudioProcessor::calculateGainForSample (float *filtered_input, float* filtered_vn_output){
+float StereoWidenerAudioProcessor::calculateGainForSample (float *filtered_input, float* filtered_decorr_output){
     float lowpass_input = filtered_input[0];
     float highpass_input = filtered_input[1];
-    float lowpass_decorr = filtered_vn_output[0];
-    float highpass_decorr = filtered_vn_output[1];
+    float lowpass_decorr = filtered_decorr_output[0];
+    float highpass_decorr = filtered_decorr_output[1];
     float num = std::sqrt(lowpass_input * (lowpass_input - gain_multiplier[0]*highpass_input));
     float den = std::sqrt(lowpass_decorr * (lowpass_decorr + gain_multiplier[1]*highpass_decorr));
     return num / den;

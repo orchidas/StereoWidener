@@ -123,16 +123,18 @@ float LinkwitzCrossover::process(const float input){
     for (int i = 0; i < order; i++){
         output += (numCoeffs[i+1] * prevInput[i]) - (denCoeffs[i] * prevOutput[i]);
     }
-    //std::cout << "Input:" << input << ", " <<  "Filter output:" << output << std::endl;
     
     //update previous input and output buffer - right shift by 1
     for(int i = order; i > 0; i--){
-        if (i < order)
-            prevOutput[i] = prevOutput[i-1];
+        prevOutput[i] = prevOutput[i-1];
         prevInput[i] = prevInput[i-1];
     }
     prevInput[0] = input;
     prevOutput[0] = output;
     
-    return output;
+    //there is a 180 degree phase shift between lowpass and highpass
+    if (lowpass)
+        return output;
+    else
+        return -output;
 }
