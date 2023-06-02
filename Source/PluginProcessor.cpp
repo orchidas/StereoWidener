@@ -160,7 +160,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     //update parameter
     if (prevWidth != *width) {
             pan[0].update(*width/100.0);
-            pan[1].update(1 - *width/100.0);
+            pan[1].update(*width/100.0);
             prevWidth = *width;
         }
     
@@ -181,10 +181,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     for (int i = 0; i < numSamples; i++){
 
         for(int chan = 0; chan < totalNumOutputChannels; chan++){
-            float vn_output = vnSeq[chan].process(inputData[i][chan]);
-            //a gain multiplication is needed here for energy normalisation
-            if (vn_output != 0.)
-                vn_output *= staticGain * (inputData[i][chan] / vn_output);
+            float vn_output = vnSeq[chan].process(inputData[i][chan]);        
             //send to panner
             pannerInputs[0] = vn_output;
             pannerInputs[1] = inputData[i][chan];

@@ -70,7 +70,6 @@ private:
     float targetDecaydB = 10.;
     float* pannerInputs;
     float prevWidth = 0.0f;
-    const float staticGain = (-1 + std::sqrt(5)) / 2.;
     enum{
         vnLenMs = 30,
     };
