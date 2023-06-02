@@ -49,6 +49,7 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
     cutoffFrequencySlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     cutoffFrequencySlider.setRange (200.0, 8000.0);
     cutoffFrequencySlider.setValue(500.0);
+    cutoffFrequencySlider.setSkewFactor(0.5);  //this will ensure more focus on lower frequencies
     cutoffFrequencyAttach.reset (new juce::AudioProcessorValueTreeState::SliderAttachment (valueTreeState, "cutoffFrequency", cutoffFrequencySlider));
 
     
