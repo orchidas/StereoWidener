@@ -74,16 +74,16 @@ private:
     VelvetNoise* vnSeq;
     int density = 1000;
     float targetDecaydB = 10.;
-    bool logDistribution = true;
+    bool logDistribution = false;
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
-    float prevWidthLower;
-    float prevWidthHigher;
+    float prevWidthLower, curWidthLower;
+    float prevWidthHigher, curWidthHigher;
     float prevCutoffFreq;
     const int numChannels = getMainBusNumInputChannels();
     const float PI = std::acos(-1);     //PI
-    const float smooth_factor = 0.99;   //one pole filter for parameter update
+    float smooth_factor = 0.99;   //one pole filter for parameter update
     enum{
         vnLenMs = 30,
     };

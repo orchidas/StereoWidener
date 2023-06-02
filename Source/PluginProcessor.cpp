@@ -49,18 +49,7 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
 
 }
 
-StereoWidenerAudioProcessor::~StereoWidenerAudioProcessor()
-{
-    delete [] pannerInputs;
-    delete [] temp_output;
-    delete [] pan;
-    delete [] vnSeq;
-    delete [] gain_multiplier;
-    for (int i = 0; i < 2 * numFreqBands; i++){
-        delete [] filters[i];
-    }
-    
-}
+StereoWidenerAudioProcessor::~StereoWidenerAudioProcessor(){}
 
 //==============================================================================
 const juce::String StereoWidenerAudioProcessor::getName() const
@@ -161,7 +150,9 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     
     inputData = std::vector<std::vector<float>>(samplesPerBlock, std::vector<float>(numChannels, 0.0f));
     prevWidthLower = 0.f;
+    curWidthLower = 0.f;
     prevWidthHigher = 0.0f;
+    curWidthHigher = 0.f;
     prevCutoffFreq = 500.0;
 
 }
@@ -170,6 +161,15 @@ void StereoWidenerAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    delete [] pannerInputs;
+    delete [] temp_output;
+    delete [] pan;
+    delete [] vnSeq;
+    delete [] gain_multiplier;
+    for (int i = 0; i < 2 * numFreqBands; i++){
+        delete [] filters[i];
+    }
+    
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -206,10 +206,11 @@ float StereoWidenerAudioProcessor::onePoleFilter(float input, float previous_out
 void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
+    int count = 0;
     
     //update gains
     if (prevWidthLower != *widthLower || prevWidthHigher != *widthHigher){
-        
+
         float lowpass_angle = (float) juce::jmap (*widthLower/100, 0.f, 1.0f, 0.f, PI/2.0f);
         float highpass_angle = (float) juce::jmap (*widthHigher/100, 0.f, 1.0f, 0.f, PI/2.0f);
         gain_multiplier[0] = 2*std::sin(lowpass_angle)*std::sin(highpass_angle);
@@ -222,7 +223,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     
     //updatelowpass width
     if (prevWidthLower != *widthLower) {
-        float curWidthLower = onePoleFilter(*widthLower, prevWidthLower, smooth_factor, 1.-smooth_factor);
+        curWidthLower = *widthLower; //onePoleFilter(*widthLower, prevWidthLower, smooth_factor, 1.-smooth_factor);
         pan[0].update(curWidthLower/100.0);
         pan[2].update(curWidthLower/100.0);
         prevWidthLower = curWidthLower;
@@ -230,7 +231,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     
     //update highpass width
     if (prevWidthHigher != *widthHigher){
-        float curWidthHigher = onePoleFilter(*widthHigher, prevWidthHigher, smooth_factor, 1.-smooth_factor);
+        curWidthHigher = *widthHigher; //onePoleFilter(*widthHigher, prevWidthHigher, smooth_factor, 1.-smooth_factor);
         pan[1].update(curWidthHigher/100.0);
         pan[3].update(curWidthHigher/100.0);
         prevWidthHigher = curWidthHigher;
@@ -239,8 +240,8 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     
     //update filter cutoff frequency
     if (prevCutoffFreq != *cutoffFrequency){
-        float curCutoffFreq = onePoleFilter(*cutoffFrequency, prevCutoffFreq, smooth_factor, 1.-smooth_factor);
-        int count = 0;
+        float curCutoffFreq = *cutoffFrequency; //onePoleFilter(*cutoffFrequency, prevCutoffFreq, smooth_factor, 1.-smooth_factor);
+        count = 0;
         for(int k = 0; k < numChannels; k++){
             for (int i = 0; i < numFreqBands; i++){
                 for (int j = 0; j < numChannels; j++)
@@ -268,7 +269,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     
     //process input to get output
     for (int i = 0; i < numSamples; i++){
-        int count = 0;
+        count = 0;
         for(int chan = 0; chan < totalNumOutputChannels; chan++){
             //decorrelate input channel by convolving with VN sequence
             float output = 0.0f;
@@ -282,7 +283,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 filtered_input[k] = filters[k][chan].process(inputData[i][chan]);
                 filtered_vn_output[k] = filters[numFreqBands + k][chan].process(vn_output);
             }
-            //try adding a gain to he decorrelated output to balance input and output energy
+            //try adding a gain to the decorrelated output to balance input and output energy
             float gain = calculateGainForSample(filtered_input, filtered_vn_output);
         
             for (int k = 0; k < numFreqBands; k++){
