@@ -153,7 +153,9 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     curWidthLower = 0.f;
     prevWidthHigher = 0.0f;
     curWidthHigher = 0.f;
-    prevCutoffFreq = 500.0;
+    prevCutoffFreq = 500.0f;
+    smooth_factor = std::exp(-2*PI / (smoothingTimeMs * 0.001f * sampleRate));
+
 
 }
 
@@ -198,8 +200,8 @@ bool StereoWidenerAudioProcessor::isBusesLayoutSupported (const BusesLayout& lay
 }
 #endif
 
-float StereoWidenerAudioProcessor::onePoleFilter(float input, float previous_output, float a, float b){
-    return input * b - previous_output * a;
+inline float StereoWidenerAudioProcessor::onePoleFilter(float input, float previous_output){
+    return (input * (1.0f-smooth_factor)) + (previous_output * smooth_factor);
 }
 
 
@@ -209,21 +211,21 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     int count = 0;
     
     //update gains
-    if (prevWidthLower != *widthLower || prevWidthHigher != *widthHigher){
-
-        float lowpass_angle = (float) juce::jmap (*widthLower/100, 0.f, 1.0f, 0.f, PI/2.0f);
-        float highpass_angle = (float) juce::jmap (*widthHigher/100, 0.f, 1.0f, 0.f, PI/2.0f);
-        gain_multiplier[0] = 2*std::sin(lowpass_angle)*std::sin(highpass_angle);
-        gain_multiplier[1] = 2*std::cos(lowpass_angle)*std::cos(highpass_angle);
-    }
-    
+//    if (prevWidthLower != *widthLower || prevWidthHigher != *widthHigher){
+//
+//        float lowpass_angle = (float) juce::jmap (*widthLower/100, 0.f, 1.0f, 0.f, PI/2.0f);
+//        float highpass_angle = (float) juce::jmap (*widthHigher/100, 0.f, 1.0f, 0.f, PI/2.0f);
+//        gain_multiplier[0] = 2*std::sin(lowpass_angle)*std::sin(highpass_angle);
+//        gain_multiplier[1] = 2*std::cos(lowpass_angle)*std::cos(highpass_angle);
+//    }
+//
     //update parameter
     //panners 0 and 2 have lowpassed signals
     //panners 1 and 3 have highpass signals
     
-    //updatelowpass width
+    //update lowpass width
     if (prevWidthLower != *widthLower) {
-        curWidthLower = *widthLower; //onePoleFilter(*widthLower, prevWidthLower, smooth_factor, 1.-smooth_factor);
+        curWidthLower = onePoleFilter(*widthLower, prevWidthLower);
         pan[0].update(curWidthLower/100.0);
         pan[2].update(curWidthLower/100.0);
         prevWidthLower = curWidthLower;
@@ -231,7 +233,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     
     //update highpass width
     if (prevWidthHigher != *widthHigher){
-        curWidthHigher = *widthHigher; //onePoleFilter(*widthHigher, prevWidthHigher, smooth_factor, 1.-smooth_factor);
+        curWidthHigher = onePoleFilter(*widthHigher, prevWidthHigher);
         pan[1].update(curWidthHigher/100.0);
         pan[3].update(curWidthHigher/100.0);
         prevWidthHigher = curWidthHigher;
@@ -240,7 +242,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     
     //update filter cutoff frequency
     if (prevCutoffFreq != *cutoffFrequency){
-        float curCutoffFreq = *cutoffFrequency; //onePoleFilter(*cutoffFrequency, prevCutoffFreq, smooth_factor, 1.-smooth_factor);
+        curCutoffFreq = onePoleFilter(*cutoffFrequency, prevCutoffFreq);
         count = 0;
         for(int k = 0; k < numChannels; k++){
             for (int i = 0; i < numFreqBands; i++){
@@ -284,11 +286,11 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 filtered_vn_output[k] = filters[numFreqBands + k][chan].process(vn_output);
             }
             //try adding a gain to the decorrelated output to balance input and output energy
-            float gain = calculateGainForSample(filtered_input, filtered_vn_output);
+            //float gain = calculateGainForSample(filtered_input, filtered_vn_output);
         
             for (int k = 0; k < numFreqBands; k++){
                 //gain adjust the filtered decorrelator output
-                filtered_vn_output[k] *= gain;
+                //filtered_vn_output[k] *= gain;
                 //send filtered signals to panner
                 pannerInputs[0] = filtered_vn_output[k];
                 pannerInputs[1] = filtered_input[k];

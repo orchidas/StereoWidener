@@ -58,7 +58,7 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     float calculateGainForSample (float *filtered_input, float* filtered_vn_output);
-    float onePoleFilter(float input, float previous_output, float a, float b);
+    inline float onePoleFilter(float input, float previous_output);
 
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
@@ -66,12 +66,16 @@ public:
     std::atomic<float>* widthHigher;
     std::atomic<float>* cutoffFrequency;
     const int numFreqBands = 2;
-    Panner* pan;
-    LinkwitzCrossover** filters;
+
 private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StereoWidenerAudioProcessor)
+    const int numChannels = getMainBusNumInputChannels();
+    const float PI = std::acos(-1);     //PI
+    
     VelvetNoise* vnSeq;
+    Panner* pan;
+    LinkwitzCrossover** filters;
     int density = 1000;
     float targetDecaydB = 10.;
     bool logDistribution = false;
@@ -80,12 +84,11 @@ private:
     float* gain_multiplier;
     float prevWidthLower, curWidthLower;
     float prevWidthHigher, curWidthHigher;
-    float prevCutoffFreq;
-    const int numChannels = getMainBusNumInputChannels();
-    const float PI = std::acos(-1);     //PI
-    float smooth_factor = 0.99;   //one pole filter for parameter update
+    float prevCutoffFreq, curCutoffFreq;
+    float smooth_factor;   //one pole filter for parameter update
     enum{
         vnLenMs = 30,
+        smoothingTimeMs = 5,
     };
     std::vector<std::vector<float>> inputData;
 
