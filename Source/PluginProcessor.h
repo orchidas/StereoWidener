@@ -78,7 +78,7 @@ private:
     LinkwitzCrossover** filters;
     int density = 1000;
     float targetDecaydB = 10.;
-    bool logDistribution = false;
+    bool logDistribution = true;
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
