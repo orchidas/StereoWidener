@@ -57,6 +57,8 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+    float calculateGainForSample (float *filtered_input, float* filtered_vn_output);
+    float onePoleFilter(float input, float previous_output, float a, float b);
 
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
@@ -74,11 +76,13 @@ private:
     float targetDecaydB = 10.;
     float* pannerInputs;
     float* temp_output;
+    float* gain_multiplier;
     float prevWidthLower;
     float prevWidthHigher;
     float prevCutoffFreq;
-    const float staticGain = (-1 + std::sqrt(5)) / 2.;
     const int numChannels = getMainBusNumInputChannels();
+    const float PI = std::acos(-1);     //PI
+    const float smooth_factor = 0.99;   //one pole filter for parameter update
     enum{
         vnLenMs = 30,
     };
