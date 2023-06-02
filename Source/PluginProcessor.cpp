@@ -112,7 +112,7 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     pannerInputs = new float[numChannels];
 
     for(int k = 0; k < numChannels; k++){
-        vnSeq[k].initialize(sampleRate, vnLenMs, density, targetDecaydB);
+        vnSeq[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDist);
         pan[k].initialize();
         pannerInputs[k] = 0.f;
     }

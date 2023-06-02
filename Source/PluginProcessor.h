@@ -70,6 +70,7 @@ private:
     float targetDecaydB = 10.;
     float* pannerInputs;
     float prevWidth = 0.0f;
+    bool logDist = false;
     enum{
         vnLenMs = 30,
     };
