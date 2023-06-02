@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "VelvetNoise.h"
 #include "Panner.h"
+#include "LinkwitzCrossover.h"
 //==============================================================================
 /**
 */
@@ -56,20 +57,33 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+    float calculateGainForSample (float *filtered_input, float* filtered_vn_output);
+    float onePoleFilter(float input, float previous_output, float a, float b);
 
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
-    std::atomic<float>* width; // stereo width (0 - original, 100 - max widening)
+    std::atomic<float>* widthLower; // stereo width (0 - original, 100 - max widening)
+    std::atomic<float>* widthHigher;
+    std::atomic<float>* cutoffFrequency;
+    const int numFreqBands = 2;
     Panner* pan;
-    
+    LinkwitzCrossover** filters;
 private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StereoWidenerAudioProcessor)
     VelvetNoise* vnSeq;
     int density = 1000;
     float targetDecaydB = 10.;
+    bool logDistribution = true;
     float* pannerInputs;
-    float prevWidth = 0.0f;
+    float* temp_output;
+    float* gain_multiplier;
+    float prevWidthLower;
+    float prevWidthHigher;
+    float prevCutoffFreq;
+    const int numChannels = getMainBusNumInputChannels();
+    const float PI = std::acos(-1);     //PI
+    const float smooth_factor = 0.99;   //one pole filter for parameter update
     enum{
         vnLenMs = 30,
     };
