@@ -55,6 +55,7 @@ StereoWidenerAudioProcessor::~StereoWidenerAudioProcessor()
     delete [] temp_output;
     delete [] pan;
     delete [] vnSeq;
+    delete [] gain_multiplier;
     for (int i = 0; i < 2 * numFreqBands; i++){
         delete [] filters[i];
     }
@@ -138,7 +139,7 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
 
     for(int k = 0; k < numChannels; k++){
         
-        vnSeq[k].initialize(sampleRate, vnLenMs, density, targetDecaydB);
+        vnSeq[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
         pannerInputs[k] = 0.f;
 
         for (int i = 0; i < numFreqBands; i++){
@@ -281,7 +282,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 filtered_input[k] = filters[k][chan].process(inputData[i][chan]);
                 filtered_vn_output[k] = filters[numFreqBands + k][chan].process(vn_output);
             }
-            //try adding a gain here (might not work as expected)
+            //try adding a gain to he decorrelated output to balance input and output energy
             float gain = calculateGainForSample(filtered_input, filtered_vn_output);
         
             for (int k = 0; k < numFreqBands; k++){

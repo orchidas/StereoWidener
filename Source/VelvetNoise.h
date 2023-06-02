@@ -18,7 +18,7 @@ public:
     VelvetNoise();
     ~VelvetNoise();
     
-    void initialize(float sR, float L, int gS, float targetDecaydB);
+    void initialize(float sR, float L, int gS, float targetDecaydB, bool logDistribution);
     float process(const float input);
     void update(int newGridSize);
     void setImpulseLocationValues();
@@ -33,6 +33,7 @@ private:
     float* impulseValues;   //value at impulse positions
     float decaydB;          //decay in dB of the sequence
     float sampleRate;       //sampling rate in Hz
+    bool logDistribution;   // are the impulses concentrated at the start?
     DelayLine delayLine;    //Delay line to do convolution with velvet sequence
 
 };

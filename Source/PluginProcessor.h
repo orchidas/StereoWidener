@@ -74,6 +74,7 @@ private:
     VelvetNoise* vnSeq;
     int density = 1000;
     float targetDecaydB = 10.;
+    bool logDistribution = true;
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
