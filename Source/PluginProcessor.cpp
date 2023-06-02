@@ -199,15 +199,17 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
 {
     juce::ScopedNoDenormals noDenormals;
     //update parameter
+    //panners 0 and 2 have lowpassed signals
+    //panners 1 and 3 have highpass signals
     if (prevWidthLower != *widthLower) {
             pan[0].update(*widthLower/100.0);
-            pan[1].update(1 - *widthLower/100.0);
+            pan[2].update(*widthLower/100.0);
             prevWidthLower = *widthLower;
         }
     
     if (prevWidthHigher != *widthHigher){
-        pan[2].update(*widthHigher/100.0);
-        pan[3].update(1.0 - *widthLower/100.0);
+        pan[1].update(*widthHigher/100.0);
+        pan[3].update(*widthLower/100.0);
         prevWidthHigher = *widthHigher;
     }
     
@@ -245,9 +247,6 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
             //decorrelate input channel by convolving with VN sequence
             float output = 0.0f;
             float vn_output = vnSeq[chan].process(inputData[i][chan]);
-            //a gain multiplication is needed here for energy normalisation
-            if (vn_output != 0.)
-                vn_output *= staticGain * (inputData[i][chan] / vn_output);
             
             //process in frequency bands
             for(int k = 0; k < numFreqBands; k++){
