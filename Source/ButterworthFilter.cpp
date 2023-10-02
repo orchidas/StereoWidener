@@ -52,7 +52,7 @@ void ButterworthFilter::setCoefficients(){
             frac = 1.0 / frac;
         
         b[k][0] = std::pow(frac - 1, 2);
-        b[k][1] = 2 * (1 - std::pow(frac, 2)) * std::cos((PI*2*(k+1) + order + 1) / (2 * order));
+        b[k][1] = 2 * (1 - std::pow(frac, 2)) * std::cos((PI*2*(k+1) + order - 1) / (2 * order));
         b[k][2] = b[k][0];
 
     }
