@@ -22,19 +22,19 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
                        ),
     parameters(*this, nullptr, juce::Identifier ("StereoWidener"),{
     std::make_unique<juce::AudioParameterFloat>
-    ("widthLower", // parameterID
+    (juce::ParameterID{"widthLower",1}, // parameterID and parameter version
      "Lower frequency width", // parameter name
      0.0f,   // minimum value
      100.0f,   // maximum value
      0.0f),
     std::make_unique<juce::AudioParameterFloat>
-    ("widthHigher", // parameterID
+    (juce::ParameterID{"widthHigher",1}, // parameterID
      "Higher frequency width", // parameter name
      0.0f,   // minimum value
      100.0f,   // maximum value
      0.0f),
     std::make_unique<juce::AudioParameterFloat>
-    ("cutoffFrequency", // parameterID
+    (juce::ParameterID{"cutoffFrequency",1}, // parameterID
      "Filter cutoff frequency", // parameter name
      200.0f,   // minimum value
      8000.0f,   // maximum value
@@ -119,12 +119,12 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     if (allpassDecorr)
-        allpassCascade = new BiquadCascade[numChannels];
+        allpassCascade = new AllpassBiquadCascade[numChannels];
     else
         velvetSequence = new VelvetNoise[numChannels];
     
     pan = new Panner[numFreqBands * numChannels];
-    filters = new LinkwitzCrossover* [numFreqBands * numChannels];
+    amp_preserve_filters = new LinkwitzCrossover* [numFreqBands * numChannels];
     gain_multiplier = new float[numFreqBands];
     temp_output = new float[numFreqBands];
     pannerInputs = new float[numChannels];
@@ -147,15 +147,15 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
             
             //initialise panner
             pan[count].initialize();
-            filters[count] = new LinkwitzCrossover[numChannels];
+            amp_preserve_filters[count] = new LinkwitzCrossover[numChannels];
             
            //0, 2 contains lowpass filter and 1, 3 contains highpass filter
             for (int j = 0; j < numChannels; j++){
                 //initialise filters
                 if (count % numChannels == 0)
-                    filters[count][j].initialize(sampleRate, "lowpass");
+                    amp_preserve_filters[count][j].initialize(sampleRate, "lowpass");
                 else
-                    filters[count][j].initialize(sampleRate, "highpass");
+                    amp_preserve_filters[count][j].initialize(sampleRate, "highpass");
             }
             count++;
         }
@@ -186,7 +186,7 @@ void StereoWidenerAudioProcessor::releaseResources()
         delete [] velvetSequence;
     
     for (int i = 0; i < numChannels * numFreqBands; i++){
-        delete [] filters[i];
+        delete [] amp_preserve_filters[i];
     }
     
 }
@@ -227,15 +227,6 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     juce::ScopedNoDenormals noDenormals;
     int count = 0;
     
-    //update gains
-//    if (prevWidthLower != *widthLower || prevWidthHigher != *widthHigher){
-//
-//        float lowpass_angle = (float) juce::jmap (*widthLower/100, 0.f, 1.0f, 0.f, PI/2.0f);
-//        float highpass_angle = (float) juce::jmap (*widthHigher/100, 0.f, 1.0f, 0.f, PI/2.0f);
-//        gain_multiplier[0] = 2*std::sin(lowpass_angle)*std::sin(highpass_angle);
-//        gain_multiplier[1] = 2*std::cos(lowpass_angle)*std::cos(highpass_angle);
-//    }
-//
     //update parameter
     //panners 0 and 2 have lowpassed signals
     //panners 1 and 3 have highpass signals
@@ -264,7 +255,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
         for(int k = 0; k < numChannels; k++){
             for (int i = 0; i < numFreqBands; i++){
                 for (int j = 0; j < numChannels; j++)
-                    filters[count][j].update(curCutoffFreq);
+                    amp_preserve_filters[count][j].update(curCutoffFreq);
                 count++;
             }
         }
@@ -305,12 +296,10 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
             
             //process in frequency bands
             for(int k = 0; k < numFreqBands; k++){
-                //filter input and VN output
-                filtered_input[k] = filters[k][chan].process(inputData[i][chan]);
-                filtered_decorr_output[k] = filters[numFreqBands + k][chan].process(decorr_output);
+                //pass input and decorrelation output through filterbank
+                filtered_input[k] = amp_preserve_filters[k][chan].process(inputData[i][chan]);
+                filtered_decorr_output[k] = amp_preserve_filters[numFreqBands + k][chan].process(decorr_output);
             }
-            //try adding a gain to the decorrelated output to balance input and output energy
-            //float gain = calculateGainForSample(filtered_input, filtered_decorr_output);
         
             for (int k = 0; k < numFreqBands; k++){
                 //gain adjust the filtered decorrelator output
@@ -328,16 +317,6 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     }
 }
     
-
-float StereoWidenerAudioProcessor::calculateGainForSample (float *filtered_input, float* filtered_decorr_output){
-    float lowpass_input = filtered_input[0];
-    float highpass_input = filtered_input[1];
-    float lowpass_decorr = filtered_decorr_output[0];
-    float highpass_decorr = filtered_decorr_output[1];
-    float num = std::sqrt(lowpass_input * (lowpass_input - gain_multiplier[0]*highpass_input));
-    float den = std::sqrt(lowpass_decorr * (lowpass_decorr + gain_multiplier[1]*highpass_decorr));
-    return num / den;
-}
 
 //==============================================================================
 bool StereoWidenerAudioProcessor::hasEditor() const

@@ -12,7 +12,7 @@
 #include "VelvetNoise.h"
 #include "Panner.h"
 #include "LinkwitzCrossover.h"
-#include "BiquadCascade.h"
+#include "AllpassBiquadCascade.h"
 //==============================================================================
 /**
 */
@@ -75,9 +75,9 @@ private:
     const float PI = std::acos(-1);
     
     VelvetNoise* velvetSequence;
-    BiquadCascade* allpassCascade;
+    AllpassBiquadCascade* allpassCascade;
     Panner* pan;
-    LinkwitzCrossover** filters;
+    LinkwitzCrossover** amp_preserve_filters;
     int density = 1000;
     float targetDecaydB = 10.;
     bool logDistribution = true;        //whether to concentrate VN impulses at the beginning

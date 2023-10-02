@@ -5,23 +5,37 @@
               pluginManufacturer="orchi" companyWebsite="www.orchi.com" cppLanguageStandard="17">
   <MAINGROUP id="Cr37Rz" name="StereoWidener">
     <GROUP id="{7E19498E-394C-C938-D3D4-281C6825972C}" name="Source">
-      <FILE id="RIzedn" name="LinkwitzCrossover.cpp" compile="1" resource="0"
-            file="../StereoWiidenerStandaloneDebug/Source/LinkwitzCrossover.cpp"/>
-      <FILE id="obYPka" name="LinkwitzCrossover.h" compile="0" resource="0"
-            file="../StereoWiidenerStandaloneDebug/Source/LinkwitzCrossover.h"/>
-      <FILE id="oXwtwE" name="DelayLine.cpp" compile="1" resource="0" file="../StereoWiidenerStandaloneDebug/Source/DelayLine.cpp"/>
-      <FILE id="JE69gI" name="DelayLine.h" compile="0" resource="0" file="../StereoWiidenerStandaloneDebug/Source/DelayLine.h"/>
-      <FILE id="fNhVcs" name="Panner.cpp" compile="1" resource="0" file="../StereoWiidenerStandaloneDebug/Source/Panner.cpp"/>
-      <FILE id="O98agL" name="Panner.h" compile="0" resource="0" file="../StereoWiidenerStandaloneDebug/Source/Panner.h"/>
-      <FILE id="FI3vn0" name="VelvetNoise.cpp" compile="1" resource="0" file="../StereoWiidenerStandaloneDebug/Source/VelvetNoise.cpp"/>
-      <FILE id="kOE7kD" name="VelvetNoise.h" compile="0" resource="0" file="../StereoWiidenerStandaloneDebug/Source/VelvetNoise.h"/>
-      <FILE id="rZmU5o" name="PluginProcessor.cpp" compile="1" resource="0"
-            file="Source/PluginProcessor.cpp"/>
-      <FILE id="qt1Cy8" name="PluginProcessor.h" compile="0" resource="0"
-            file="Source/PluginProcessor.h"/>
-      <FILE id="tqNNoM" name="PluginEditor.cpp" compile="1" resource="0"
+      <FILE id="cuZy8u" name="AllpassBiquadCascade.cpp" compile="1" resource="0"
+            file="Source/AllpassBiquadCascade.cpp"/>
+      <FILE id="aI1Pc7" name="AllpassBiquadCascade.h" compile="0" resource="0"
+            file="Source/AllpassBiquadCascade.h"/>
+      <FILE id="XmJUIi" name="BiquadCascade.cpp" compile="1" resource="0"
+            file="Source/BiquadCascade.cpp"/>
+      <FILE id="vkuKyI" name="BiquadCascade.h" compile="0" resource="0" file="Source/BiquadCascade.h"/>
+      <FILE id="n3lpCX" name="BiquadFilter.cpp" compile="1" resource="0"
+            file="Source/BiquadFilter.cpp"/>
+      <FILE id="IPPd6n" name="BiquadFilter.h" compile="0" resource="0" file="Source/BiquadFilter.h"/>
+      <FILE id="DKid9G" name="ButterworthFilter.cpp" compile="1" resource="0"
+            file="Source/ButterworthFilter.cpp"/>
+      <FILE id="kOHDUD" name="ButterworthFilter.h" compile="0" resource="0"
+            file="Source/ButterworthFilter.h"/>
+      <FILE id="DwCsHC" name="DelayLine.cpp" compile="1" resource="0" file="Source/DelayLine.cpp"/>
+      <FILE id="IriPgh" name="DelayLine.h" compile="0" resource="0" file="Source/DelayLine.h"/>
+      <FILE id="mhbow8" name="LinkwitzCrossover.cpp" compile="1" resource="0"
+            file="Source/LinkwitzCrossover.cpp"/>
+      <FILE id="HHM4dO" name="LinkwitzCrossover.h" compile="0" resource="0"
+            file="Source/LinkwitzCrossover.h"/>
+      <FILE id="ntqeDp" name="Panner.cpp" compile="1" resource="0" file="Source/Panner.cpp"/>
+      <FILE id="QsY7kc" name="Panner.h" compile="0" resource="0" file="Source/Panner.h"/>
+      <FILE id="Abz1uX" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
-      <FILE id="xIA25W" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="cYDukX" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="M4L3Lo" name="PluginProcessor.cpp" compile="1" resource="0"
+            file="Source/PluginProcessor.cpp"/>
+      <FILE id="a5rABQ" name="PluginProcessor.h" compile="0" resource="0"
+            file="Source/PluginProcessor.h"/>
+      <FILE id="aFy1rZ" name="VelvetNoise.cpp" compile="1" resource="0" file="Source/VelvetNoise.cpp"/>
+      <FILE id="ZfSSQt" name="VelvetNoise.h" compile="0" resource="0" file="Source/VelvetNoise.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>
