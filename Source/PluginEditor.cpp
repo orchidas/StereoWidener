@@ -57,8 +57,28 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
     cutoffFrequencyLabel.setText("Filter cutoff frequency", juce::dontSendNotification);
     cutoffFrequencyLabel.setFont(juce::Font("Times New Roman", 15.0f, juce::Font::plain));
     cutoffFrequencyLabel.attachToComponent (&cutoffFrequencySlider, false);
+    
+    //set the toggle buttons
+    addAndMakeVisible(isAmpPreserve);
+    // [=] indicates a lambda function, it sets the parameterChangedCallback below
+    isAmpPreserveAttach = std::make_unique<juce::ParameterAttachment>(*vts.getParameter("isAmpPreserve"), [=] (float value) {
+            bool isSelected = value == 1.0f;
+            isAmpPreserve.setToggleState(isSelected, juce::sendNotificationSync);
+        });
+    
+    isAmpPreserve.onClick = [=] {
+        //if toggle state is true, then
+        if (isAmpPreserve.getToggleState())
+            isAmpPreserveAttach->setValueAsCompleteGesture(1.0f);
+    };
+    isAmpPreserveAttach->sendInitialUpdate();
+    
+    //add labels
+    addAndMakeVisible(isAmpPreserveLabel);
+    isAmpPreserveLabel.setText ("Amplitude preserve", juce::dontSendNotification);
+    isAmpPreserveLabel.setFont(juce::Font ("Times New Roman", 15.0f, juce::Font::plain));
 }
-
+    
 StereoWidenerAudioProcessorEditor::~StereoWidenerAudioProcessorEditor()
 {
 }
@@ -82,5 +102,9 @@ void StereoWidenerAudioProcessorEditor::resized()
     widthLowerSlider.setBounds (sliderLeft , 50, getWidth() - sliderLeft - 10, 80);
     widthHigherSlider.setBounds (sliderLeft , 150, getWidth() - sliderLeft - 10, 80);
     cutoffFrequencySlider.setBounds (sliderLeft , 250, getWidth() - sliderLeft - 10, 80);
+    isAmpPreserve.setBounds (sliderLeft, 320, getWidth() - sliderLeft - 10, 50);
+    isAmpPreserveLabel.setBounds(sliderLeft + 50, 340, getWidth() - sliderLeft - 10, 20);
+
+
     
 }

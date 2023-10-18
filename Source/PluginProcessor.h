@@ -58,14 +58,14 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
-    float calculateGainForSample (float *filtered_input, float* filtered_vn_output);
     inline float onePoleFilter(float input, float previous_output);
 
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
-    std::atomic<float>* widthLower; // stereo width (0 - original, 100 - max widening)
-    std::atomic<float>* widthHigher;
-    std::atomic<float>* cutoffFrequency;
+    std::atomic<float>* widthLower;         //stereo width (0 - original, 100 - max widening)
+    std::atomic<float>* widthHigher;        
+    std::atomic<float>* cutoffFrequency;    //filterbank cutoff frequency
+    std::atomic<float>* isAmpPreserve;      //calculations are amplitude or energy preserving
     const int numFreqBands = 2;
 
 private:

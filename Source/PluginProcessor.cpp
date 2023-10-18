@@ -39,14 +39,18 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
      200.0f,   // minimum value
      8000.0f,   // maximum value
      0.0f),
-    }) // default value)
+    std::make_unique<juce::AudioParameterInt>
+      (juce::ParameterID{"isAmpPreserve",1},
+       "Amplitude preserve",
+       0, 1, 0),
+    })
 #endif
 {
     //set user defined parameters
     widthLower = parameters.getRawParameterValue("widthLower");
     widthHigher = parameters.getRawParameterValue("widthHigher");
     cutoffFrequency = parameters.getRawParameterValue("cutoffFrequency");
-
+    isAmpPreserve = parameters.getRawParameterValue("isAmpPreserve");
 }
 
 StereoWidenerAudioProcessor::~StereoWidenerAudioProcessor(){}
@@ -302,8 +306,6 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
             }
         
             for (int k = 0; k < numFreqBands; k++){
-                //gain adjust the filtered decorrelator output
-                //filtered_decorr_output[k] *= gain;
                 //send filtered signals to panner
                 pannerInputs[0] = filtered_decorr_output[k];
                 pannerInputs[1] = filtered_input[k];
@@ -335,6 +337,10 @@ void StereoWidenerAudioProcessor::getStateInformation (juce::MemoryBlock& destDa
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    
+    auto state = parameters.copyState();
+        std::unique_ptr<juce::XmlElement> xml (state.createXml());
+        copyXmlToBinary (*xml, destData);
 }
 
 void StereoWidenerAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
