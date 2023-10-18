@@ -84,8 +84,6 @@ private:
     int density = 1000;
     float targetDecaydB = 10.;
     bool logDistribution = true;                    //whether to concentrate VN impulses at the beginning
-    bool prevAllpassDecorr = false;                 //whether to use allpass or velvet noise for decorrelation
-    bool prevAmpPreserveFlag = false;               //whether to use amp. based or energetic calculations
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;

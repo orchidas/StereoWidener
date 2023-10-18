@@ -273,17 +273,6 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
         prevCutoffFreq = curCutoffFreq;
     }
     
-    if (prevAmpPreserveFlag != *isAmpPreserve){
-        for(int i = 0; i < numFreqBands * numChannels; i++){
-            pan[i].isAmpPreserve(*isAmpPreserve);
-        }
-        prevAmpPreserveFlag = *isAmpPreserve;
-    }
-    
-    if (prevAllpassDecorr != *hasAllpassDecorrelation){
-        prevAllpassDecorr = *hasAllpassDecorrelation;
-    }
-    
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     const int numSamples = buffer.getNumSamples();
@@ -332,7 +321,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 output += panner_output;
             }
             //output channels from panner are added
-//            if (!curAmpPreserveFlag)
+//            if (!(*isAmpPreserve))
 //                output = std::sqrt(output);
             buffer.setSample(chan, i, output);
         }

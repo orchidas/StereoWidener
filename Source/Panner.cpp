@@ -26,14 +26,8 @@ void Panner::initialize(){
 }
 
 float Panner::process(const float* input){
-    if (isAmpPreserveFlag){
-        output[0] = std::sin(angle) * input[0];
-        output[1] = std::cos(angle) * input[1];
-    }
-    else{
-        output[0] = std::pow(std::sin(angle) * input[0], 2);
-        output[1] = std::pow(std::cos(angle) * input[1], 2);
-    }
+    output[0] = std::sin(angle) * input[0];
+    output[1] = std::cos(angle) * input[1];
     return output[0] + output[1];
 }
 
@@ -43,6 +37,3 @@ void Panner::updateWidth(float newWidth){
 }
 
 
-void Panner::isAmpPreserve(bool flag){
-    isAmpPreserveFlag =  flag;
-}

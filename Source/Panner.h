@@ -18,15 +18,14 @@ public:
     void initialize();
     float process(const float* input);
     void updateWidth(float newWidth);
-    void isAmpPreserve(bool flag);
     
     
     
 private:
     const float PI = std::acos(-1);     //PI
     const int numChans = 2;             //number of channels panned
-    float angle;                        //a value between 0 and pi/2 rad that determines                                   left and right gain weightings
-    float width;                        //determines stereo width (0 - original width, 1                                    - max width)
+    float angle;                        //a value between 0 and pi/2 rad that determines left and right gain weightings
+    float width;                        //determines stereo width (0 - original width, 1 - max width)
     float* output;                      //2 channel output
     bool isAmpPreserveFlag = false;     //amplitude or energetic calculations
 
