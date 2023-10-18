@@ -12,6 +12,7 @@
 #include "VelvetNoise.h"
 #include "Panner.h"
 #include "LinkwitzCrossover.h"
+#include "ButterworthFilter.h"
 #include "AllpassBiquadCascade.h"
 //==============================================================================
 /**
@@ -78,10 +79,12 @@ private:
     AllpassBiquadCascade* allpassCascade;
     Panner* pan;
     LinkwitzCrossover** amp_preserve_filters;
+    ButterworthFilter** energy_preserve_filters;
     int density = 1000;
     float targetDecaydB = 10.;
     bool logDistribution = true;        //whether to concentrate VN impulses at the beginning
     bool allpassDecorr = false;          //whether to use allpass or velvet noise for decorrelation
+    bool prevAmpPreserveFlag = false, curAmpPreserveFlag = false;
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
@@ -94,6 +97,7 @@ private:
         smoothingTimeMs = 5,
         maxGroupDelayMs = 30,
         numBiquads = 200,
+        prewarpFreqHz = 200,
     };
     std::vector<std::vector<float>> inputData;
 

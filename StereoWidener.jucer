@@ -25,8 +25,6 @@
             file="Source/LinkwitzCrossover.cpp"/>
       <FILE id="HHM4dO" name="LinkwitzCrossover.h" compile="0" resource="0"
             file="Source/LinkwitzCrossover.h"/>
-      <FILE id="ntqeDp" name="Panner.cpp" compile="1" resource="0" file="Source/Panner.cpp"/>
-      <FILE id="QsY7kc" name="Panner.h" compile="0" resource="0" file="Source/Panner.h"/>
       <FILE id="Abz1uX" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="cYDukX" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
@@ -36,6 +34,8 @@
             file="Source/PluginProcessor.h"/>
       <FILE id="aFy1rZ" name="VelvetNoise.cpp" compile="1" resource="0" file="Source/VelvetNoise.cpp"/>
       <FILE id="ZfSSQt" name="VelvetNoise.h" compile="0" resource="0" file="Source/VelvetNoise.h"/>
+      <FILE id="DxOQGt" name="Panner.h" compile="0" resource="0" file="../StereoWiidenerStandaloneDebug/Source/Panner.h"/>
+      <FILE id="orhxUy" name="Panner.cpp" compile="1" resource="0" file="../StereoWiidenerStandaloneDebug/Source/Panner.cpp"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>

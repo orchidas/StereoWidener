@@ -11,7 +11,9 @@
 #include "Panner.h"
 
 Panner::Panner(){}
-Panner::~Panner(){}
+Panner::~Panner(){
+    delete [] output;
+}
 
 
 void Panner::initialize(){
@@ -23,14 +25,24 @@ void Panner::initialize(){
     }
 }
 
-float* Panner::process(const float* input){
-    output[0] = std::sin(angle) * input[0];
-    output[1] = std::cos(angle) * input[1];
-    return output;
+float Panner::process(const float* input){
+    if (isAmpPreserveFlag){
+        output[0] = std::sin(angle) * input[0];
+        output[1] = std::cos(angle) * input[1];
+    }
+    else{
+        output[0] = std::pow(std::sin(angle) * input[0], 2);
+        output[1] = std::pow(std::cos(angle) * input[1], 2);
+    }
+    return output[0] + output[1];
 }
 
-void Panner::update(float newWidth){
+void Panner::updateWidth(float newWidth){
     width = newWidth;
     angle = (float) juce::jmap (width, 0.f, 1.0f, 0.f, PI/2.0f);
-    //std::cout << "Angle " << angle / (PI/2.0) << std::endl;
+}
+
+
+void Panner::isAmpPreserve(bool flag){
+    isAmpPreserveFlag =  flag;
 }

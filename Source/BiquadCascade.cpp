@@ -48,6 +48,5 @@ float BiquadCascade::process(const float input){
         curOutput = biquads[i].process(curInput);
         curInput = curOutput;
     }
-    //std::cout << "Cascade INPUT :" << input << ", Cascade OUTPUT :" << curOutput << std::endl;
     return curOutput;
 }

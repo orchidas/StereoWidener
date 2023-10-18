@@ -26,7 +26,7 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
      "Lower frequency width", // parameter name
      0.0f,   // minimum value
      100.0f,   // maximum value
-     0.0f),
+     0.0f),    // initial value
     std::make_unique<juce::AudioParameterFloat>
     (juce::ParameterID{"widthHigher",1}, // parameterID
      "Higher frequency width", // parameter name
@@ -36,8 +36,8 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
     std::make_unique<juce::AudioParameterFloat>
     (juce::ParameterID{"cutoffFrequency",1}, // parameterID
      "Filter cutoff frequency", // parameter name
-     200.0f,   // minimum value
-     8000.0f,   // maximum value
+     100.0f,   // minimum value
+     4000.0f,   // maximum value
      0.0f),
     std::make_unique<juce::AudioParameterInt>
       (juce::ParameterID{"isAmpPreserve",1},
@@ -129,6 +129,7 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     
     pan = new Panner[numFreqBands * numChannels];
     amp_preserve_filters = new LinkwitzCrossover* [numFreqBands * numChannels];
+    energy_preserve_filters = new ButterworthFilter* [numFreqBands * numChannels];
     gain_multiplier = new float[numFreqBands];
     temp_output = new float[numFreqBands];
     pannerInputs = new float[numChannels];
@@ -152,14 +153,19 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
             //initialise panner
             pan[count].initialize();
             amp_preserve_filters[count] = new LinkwitzCrossover[numChannels];
+            energy_preserve_filters[count] = new ButterworthFilter[numChannels];
             
            //0, 2 contains lowpass filter and 1, 3 contains highpass filter
             for (int j = 0; j < numChannels; j++){
                 //initialise filters
-                if (count % numChannels == 0)
+                if (count % numChannels == 0){
                     amp_preserve_filters[count][j].initialize(sampleRate, "lowpass");
-                else
+                    energy_preserve_filters[count][j].initialize(sampleRate, prewarpFreqHz, "lowpass");
+                }
+                else{
                     amp_preserve_filters[count][j].initialize(sampleRate, "highpass");
+                    energy_preserve_filters[count][j].initialize(sampleRate, prewarpFreqHz, "highpass");
+                }
             }
             count++;
         }
@@ -191,6 +197,7 @@ void StereoWidenerAudioProcessor::releaseResources()
     
     for (int i = 0; i < numChannels * numFreqBands; i++){
         delete [] amp_preserve_filters[i];
+        delete [] energy_preserve_filters[i];
     }
     
 }
@@ -238,16 +245,16 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     //update lowpass width
     if (prevWidthLower != *widthLower) {
         curWidthLower = onePoleFilter(*widthLower, prevWidthLower);
-        pan[0].update(curWidthLower/100.0);
-        pan[2].update(curWidthLower/100.0);
+        pan[0].updateWidth(curWidthLower/100.0);
+        pan[2].updateWidth(curWidthLower/100.0);
         prevWidthLower = curWidthLower;
     }
     
     //update highpass width
     if (prevWidthHigher != *widthHigher){
         curWidthHigher = onePoleFilter(*widthHigher, prevWidthHigher);
-        pan[1].update(curWidthHigher/100.0);
-        pan[3].update(curWidthHigher/100.0);
+        pan[1].updateWidth(curWidthHigher/100.0);
+        pan[3].updateWidth(curWidthHigher/100.0);
         prevWidthHigher = curWidthHigher;
     }
     
@@ -258,13 +265,24 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
         count = 0;
         for(int k = 0; k < numChannels; k++){
             for (int i = 0; i < numFreqBands; i++){
-                for (int j = 0; j < numChannels; j++)
+                for (int j = 0; j < numChannels; j++){
                     amp_preserve_filters[count][j].update(curCutoffFreq);
+                    energy_preserve_filters[count][j].update(curCutoffFreq);
+                }
                 count++;
             }
         }
         prevCutoffFreq = curCutoffFreq;
     }
+    
+    if (prevAmpPreserveFlag != *isAmpPreserve){
+        prevAmpPreserveFlag = curAmpPreserveFlag;
+        curAmpPreserveFlag = *isAmpPreserve;
+        for(int i = 0; i < numFreqBands * numChannels; i++){
+            pan[i].isAmpPreserve(curAmpPreserveFlag);
+        }
+    }
+    
     
     
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -301,19 +319,26 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
             //process in frequency bands
             for(int k = 0; k < numFreqBands; k++){
                 //pass input and decorrelation output through filterbank
-                filtered_input[k] = amp_preserve_filters[k][chan].process(inputData[i][chan]);
-                filtered_decorr_output[k] = amp_preserve_filters[numFreqBands + k][chan].process(decorr_output);
+                if (curAmpPreserveFlag){
+                    filtered_input[k] = amp_preserve_filters[k][chan].process(inputData[i][chan]);
+                    filtered_decorr_output[k] = amp_preserve_filters[numFreqBands + k][chan].process(decorr_output);
+                }
+                else{
+                    filtered_input[k] = energy_preserve_filters[k][chan].process(inputData[i][chan]);
+                    filtered_decorr_output[k] = energy_preserve_filters[numFreqBands + k][chan].process(decorr_output);
+                }
             }
         
             for (int k = 0; k < numFreqBands; k++){
                 //send filtered signals to panner
                 pannerInputs[0] = filtered_decorr_output[k];
                 pannerInputs[1] = filtered_input[k];
-                float *panner_output = pan[count++].process(pannerInputs);
-                temp_output[k] = panner_output[0] + panner_output[1];
-                output += temp_output[k];
+                float panner_output = pan[count++].process(pannerInputs);
+                output += panner_output;
             }
             //output channels from panner are added
+            if (!curAmpPreserveFlag)
+                output = std::sqrt(output);
             buffer.setSample(chan, i, output);
         }
     }

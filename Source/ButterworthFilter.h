@@ -12,7 +12,7 @@
 #include "BiquadCascade.h"
 
 class ButterworthFilter{
-    //allpass biquad filter parameterised by pole radius and angle
+    //Butterworth filter of 16th order
 public:
     ButterworthFilter();
     ~ButterworthFilter();
@@ -34,4 +34,3 @@ private:
     BiquadCascade biquadCascade;    //biquad cascade object
     float** a; float** b;           //filter coefficient arrays
 };
-
