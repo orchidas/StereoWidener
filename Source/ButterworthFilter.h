@@ -25,7 +25,7 @@ public:
     
 private:
     const float PI = std::acos(-1);
-    const int order = 16;       //filter order
+    const int order = 8;       //filter order
     bool lowpass;               //type of filter, 'lowpass' or 'highpass'
     float numBiquads;
     float sample_rate;

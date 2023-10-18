@@ -43,6 +43,10 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
       (juce::ParameterID{"isAmpPreserve",1},
        "Amplitude preserve",
        0, 1, 0),
+    std::make_unique<juce::AudioParameterInt>
+        (juce::ParameterID{"hasAllpassDecorrelation",1},
+         "Allpass decorrelation",
+         0, 1, 0),
     })
 #endif
 {
@@ -51,6 +55,7 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
     widthHigher = parameters.getRawParameterValue("widthHigher");
     cutoffFrequency = parameters.getRawParameterValue("cutoffFrequency");
     isAmpPreserve = parameters.getRawParameterValue("isAmpPreserve");
+    hasAllpassDecorrelation = parameters.getRawParameterValue("hasAllpassDecorrelation");
 }
 
 StereoWidenerAudioProcessor::~StereoWidenerAudioProcessor(){}
@@ -122,10 +127,8 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    if (allpassDecorr)
-        allpassCascade = new AllpassBiquadCascade[numChannels];
-    else
-        velvetSequence = new VelvetNoise[numChannels];
+    allpassCascade = new AllpassBiquadCascade[numChannels];
+    velvetSequence = new VelvetNoise[numChannels];
     
     pan = new Panner[numFreqBands * numChannels];
     amp_preserve_filters = new LinkwitzCrossover* [numFreqBands * numChannels];
@@ -137,11 +140,9 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
 
     for(int k = 0; k < numChannels; k++){
         
-        //initialise decorrelator
-        if (allpassDecorr)
-            allpassCascade[k].initialize(numBiquads, sampleRate, maxGroupDelayMs);
-        else
-            velvetSequence[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
+        //initialise decorrelators
+        allpassCascade[k].initialize(numBiquads, sampleRate, maxGroupDelayMs);
+        velvetSequence[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
         
         //initialise panner inputs
         pannerInputs[k] = 0.f;
@@ -179,7 +180,6 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     prevCutoffFreq = 500.0f;
     smooth_factor = std::exp(-2*PI / (smoothingTimeMs * 0.001f * sampleRate));
 
-
 }
 
 void StereoWidenerAudioProcessor::releaseResources()
@@ -190,10 +190,8 @@ void StereoWidenerAudioProcessor::releaseResources()
     delete [] temp_output;
     delete [] pan;
     delete [] gain_multiplier;
-    if (allpassDecorr)
-        delete [] allpassCascade;
-    else
-        delete [] velvetSequence;
+    delete [] allpassCascade;
+    delete [] velvetSequence;
     
     for (int i = 0; i < numChannels * numFreqBands; i++){
         delete [] amp_preserve_filters[i];
@@ -276,14 +274,15 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     }
     
     if (prevAmpPreserveFlag != *isAmpPreserve){
-        prevAmpPreserveFlag = curAmpPreserveFlag;
-        curAmpPreserveFlag = *isAmpPreserve;
         for(int i = 0; i < numFreqBands * numChannels; i++){
-            pan[i].isAmpPreserve(curAmpPreserveFlag);
+            pan[i].isAmpPreserve(*isAmpPreserve);
         }
+        prevAmpPreserveFlag = *isAmpPreserve;
     }
     
-    
+    if (prevAllpassDecorr != *hasAllpassDecorrelation){
+        prevAllpassDecorr = *hasAllpassDecorrelation;
+    }
     
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -307,38 +306,34 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
             float decorr_output = 0.0f;
             
             //decorrelate input channel by convolving with VN sequence
-            if (allpassDecorr)
+            if (*hasAllpassDecorrelation)
                 decorr_output = allpassCascade[chan].process(inputData[i][chan]);
             //or by passing through allpass cascade
             else
                 decorr_output = velvetSequence[chan].process(inputData[i][chan]);
             
-            float filtered_input[numFreqBands];
-            float filtered_decorr_output[numFreqBands];
-            
             //process in frequency bands
             for(int k = 0; k < numFreqBands; k++){
+                float filtered_input = 0.0f;
+                float filtered_decorr_output = 0.0f;
                 //pass input and decorrelation output through filterbank
-                if (curAmpPreserveFlag){
-                    filtered_input[k] = amp_preserve_filters[k][chan].process(inputData[i][chan]);
-                    filtered_decorr_output[k] = amp_preserve_filters[numFreqBands + k][chan].process(decorr_output);
+                if (*isAmpPreserve){
+                    filtered_input = amp_preserve_filters[k][chan].process(inputData[i][chan]);
+                    filtered_decorr_output = amp_preserve_filters[numFreqBands + k][chan].process(decorr_output);
                 }
                 else{
-                    filtered_input[k] = energy_preserve_filters[k][chan].process(inputData[i][chan]);
-                    filtered_decorr_output[k] = energy_preserve_filters[numFreqBands + k][chan].process(decorr_output);
+                    filtered_input = energy_preserve_filters[k][chan].process(inputData[i][chan]);
+                    filtered_decorr_output = energy_preserve_filters[numFreqBands + k][chan].process(decorr_output);
                 }
-            }
-        
-            for (int k = 0; k < numFreqBands; k++){
-                //send filtered signals to panner
-                pannerInputs[0] = filtered_decorr_output[k];
-                pannerInputs[1] = filtered_input[k];
+
+                pannerInputs[0] = filtered_decorr_output;
+                pannerInputs[1] = filtered_input;
                 float panner_output = pan[count++].process(pannerInputs);
                 output += panner_output;
             }
             //output channels from panner are added
-            if (!curAmpPreserveFlag)
-                output = std::sqrt(output);
+//            if (!curAmpPreserveFlag)
+//                output = std::sqrt(output);
             buffer.setSample(chan, i, output);
         }
     }

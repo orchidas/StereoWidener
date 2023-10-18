@@ -15,7 +15,7 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (300,400);
+    setSize (300,450);
     
     //add sliders and labels
     addAndMakeVisible(widthLowerSlider);
@@ -47,18 +47,17 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
     //add sliders and labels
     addAndMakeVisible(cutoffFrequencySlider);
     cutoffFrequencySlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    cutoffFrequencySlider.setRange (200.0, 8000.0);
+    cutoffFrequencySlider.setRange (100.0, 4000.0);
     cutoffFrequencySlider.setValue(500.0);
     cutoffFrequencySlider.setSkewFactor(0.5);  //this will ensure more focus on lower frequencies
     cutoffFrequencyAttach.reset (new juce::AudioProcessorValueTreeState::SliderAttachment (valueTreeState, "cutoffFrequency", cutoffFrequencySlider));
-
     
     addAndMakeVisible(cutoffFrequencyLabel);
     cutoffFrequencyLabel.setText("Filter cutoff frequency", juce::dontSendNotification);
     cutoffFrequencyLabel.setFont(juce::Font("Times New Roman", 15.0f, juce::Font::plain));
     cutoffFrequencyLabel.attachToComponent (&cutoffFrequencySlider, false);
     
-    //set the toggle buttons
+    //add toggle button to switch between amplitude and energetic calculations
     addAndMakeVisible(isAmpPreserve);
     // [=] indicates a lambda function, it sets the parameterChangedCallback below
     isAmpPreserveAttach = std::make_unique<juce::ParameterAttachment>(*vts.getParameter("isAmpPreserve"), [=] (float value) {
@@ -70,6 +69,8 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
         //if toggle state is true, then
         if (isAmpPreserve.getToggleState())
             isAmpPreserveAttach->setValueAsCompleteGesture(1.0f);
+        else
+            isAmpPreserveAttach->setValueAsCompleteGesture(0.0f);
     };
     isAmpPreserveAttach->sendInitialUpdate();
     
@@ -77,6 +78,28 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
     addAndMakeVisible(isAmpPreserveLabel);
     isAmpPreserveLabel.setText ("Amplitude preserve", juce::dontSendNotification);
     isAmpPreserveLabel.setFont(juce::Font ("Times New Roman", 15.0f, juce::Font::plain));
+    
+    // add toggle button for choosing decorrelator
+    addAndMakeVisible(hasAllpassDecorrelation);
+    // [=] indicates a lambda function, it sets the parameterChangedCallback below
+    hasAllpassDecorrelationAttach = std::make_unique<juce::ParameterAttachment>(*vts.getParameter("hasAllpassDecorrelation"), [=] (float value) {
+            bool isSelected = value == 1.0f;
+            hasAllpassDecorrelation.setToggleState(isSelected, juce::sendNotificationSync);
+        });
+    
+    hasAllpassDecorrelation.onClick = [=] {
+        //if toggle state is true, then
+        if (hasAllpassDecorrelation.getToggleState())
+            hasAllpassDecorrelationAttach->setValueAsCompleteGesture(1.0f);
+        else
+            hasAllpassDecorrelationAttach->setValueAsCompleteGesture(0.0f);
+    };
+    hasAllpassDecorrelationAttach->sendInitialUpdate();
+    
+    //add labels
+    addAndMakeVisible(hasAllpassDecorrelationLabel);
+    hasAllpassDecorrelationLabel.setText ("Allpass decorrelation", juce::dontSendNotification);
+    hasAllpassDecorrelationLabel.setFont(juce::Font ("Times New Roman", 15.0f, juce::Font::plain));
 }
     
 StereoWidenerAudioProcessorEditor::~StereoWidenerAudioProcessorEditor()
@@ -91,7 +114,7 @@ void StereoWidenerAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setFont (juce::Font ("Times New Roman", 20.0f, juce::Font::bold));
     g.setColour (juce::Colours::lightgrey);
-    g.drawText ("StereoWidener", 150, 350, 180, 50, true);
+    g.drawText ("StereoWidener", 150, 400, 180, 50, true);
 }
 
 void StereoWidenerAudioProcessorEditor::resized()
@@ -104,7 +127,6 @@ void StereoWidenerAudioProcessorEditor::resized()
     cutoffFrequencySlider.setBounds (sliderLeft , 250, getWidth() - sliderLeft - 10, 80);
     isAmpPreserve.setBounds (sliderLeft, 320, getWidth() - sliderLeft - 10, 50);
     isAmpPreserveLabel.setBounds(sliderLeft + 50, 340, getWidth() - sliderLeft - 10, 20);
-
-
-    
+    hasAllpassDecorrelation.setBounds (sliderLeft, 360, getWidth() - sliderLeft - 10, 50);
+    hasAllpassDecorrelationLabel.setBounds(sliderLeft + 50, 380, getWidth() - sliderLeft - 10, 20);
 }

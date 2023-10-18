@@ -67,6 +67,7 @@ public:
     std::atomic<float>* widthHigher;        
     std::atomic<float>* cutoffFrequency;    //filterbank cutoff frequency
     std::atomic<float>* isAmpPreserve;      //calculations are amplitude or energy preserving
+    std::atomic<float>* hasAllpassDecorrelation; //what decorrelator to use - VN or AP
     const int numFreqBands = 2;
 
 private:
@@ -82,9 +83,9 @@ private:
     ButterworthFilter** energy_preserve_filters;
     int density = 1000;
     float targetDecaydB = 10.;
-    bool logDistribution = true;        //whether to concentrate VN impulses at the beginning
-    bool allpassDecorr = false;          //whether to use allpass or velvet noise for decorrelation
-    bool prevAmpPreserveFlag = false, curAmpPreserveFlag = false;
+    bool logDistribution = true;                    //whether to concentrate VN impulses at the beginning
+    bool prevAllpassDecorr = false;                 //whether to use allpass or velvet noise for decorrelation
+    bool prevAmpPreserveFlag = false;               //whether to use amp. based or energetic calculations
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
@@ -97,7 +98,7 @@ private:
         smoothingTimeMs = 5,
         maxGroupDelayMs = 30,
         numBiquads = 200,
-        prewarpFreqHz = 200,
+        prewarpFreqHz = 1000,
     };
     std::vector<std::vector<float>> inputData;
 

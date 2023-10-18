@@ -29,13 +29,9 @@ void ButterworthFilter::initialize(float sR, float prewarp_frequency, std::strin
     for(int i = 0; i < numBiquads; i++){
         a[i] = new float [2];
         b[i] = new float [3];
-        b[i][0] = 1.0;
-        b[i][1] = lowpass == true? 2.0 : -2.0;
-        b[i][2] = 1.0;
     }
     setCoefficients();
     biquadCascade.initialize(numBiquads, sample_rate, b, a);
-    
 }
 
 void ButterworthFilter::update(float newCutoffFreq){
@@ -52,19 +48,19 @@ void ButterworthFilter::setCoefficients(){
         frac = 1.0 / frac;
     float cos_term = 0.0f, denominator = 0.0f;
     
-
     for (int k = 0; k < numBiquads; k++){
         cos_term = std::cos(PI* (2*(k+1) + order - 1) / (2 * order));
         denominator = std::pow(frac, 2) - 2 * frac * cos_term + 1;
         if (lowpass)
             a[k][0] = -2.0 * (std::pow(frac, 2) - 1)/ denominator;
         else
-            a[k][0] = 2.0 * (std::pow(frac, 2) - 1)/ denominator;
+            a[k][0] = 2.0 * (std::pow(frac, 2) - 1) / denominator;
         a[k][1] = (std::pow(frac, 2) + 2 * frac * cos_term + 1) / denominator;
         
         //normalise the numerator coefficients
-        for (int i = 0; i < 3; i ++)
-            b[k][i] /= denominator;
+        b[k][0] = 1.0 / denominator;
+        b[k][1] = lowpass == true? 2.0 / denominator: -2.0 / denominator;
+        b[k][2] = 1.0 / denominator;
         
         //std::cout << "Butterworth coeffs for biquad #" << k+1 << ": " << a[k][0] << ", " << a[k][1] << std::endl;
 
