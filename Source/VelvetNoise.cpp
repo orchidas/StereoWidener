@@ -28,6 +28,8 @@ void VelvetNoise::initialize(float SR, float L, int gS, float targetDecaydB, boo
 
 void VelvetNoise::setImpulseLocationValues(){
     float impulseSpacing = sampleRate / gridSize;
+    float impulseEnergy = 0.0;
+
     seqLength = (int)std::floor(length / impulseSpacing);
     impulsePositions = new int[seqLength];
     impulseValues = new float[seqLength];
@@ -51,6 +53,12 @@ void VelvetNoise::setImpulseLocationValues(){
         }
         int sign = 2 * std::round(r1) - 1;
         impulseValues[i] = sign * std::exp(-convertdBtoDecayRate() * i);
+        impulseEnergy += std::pow(impulseValues[i], 2);
+    }
+    
+    //normalise by sequence energy
+    for (int i = 0; i < seqLength; i++){
+        impulseValues[i] /= std::sqrt(impulseEnergy);
         //std :: cout << "Impulse location " << impulsePositions[i] << std::endl;
         //std :: cout << "Impulse gain " << impulseValues[i] << std::endl;
     }
