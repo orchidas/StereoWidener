@@ -130,6 +130,10 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     allpassCascade = new AllpassBiquadCascade[numChannels];
     velvetSequence = new VelvetNoise[numChannels];
     
+    if (useOptVelvetFilters){
+        juce::String* opt_velvet_arrays = initialiise_velvet_from_file(opt_vn_file);
+    }
+    
     pan = new Panner[numFreqBands * numChannels];
     amp_preserve_filters = new LinkwitzCrossover* [numFreqBands * numChannels];
     energy_preserve_filters = new ButterworthFilter* [numFreqBands * numChannels];
@@ -142,7 +146,12 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
         
         //initialise decorrelators
         allpassCascade[k].initialize(numBiquads, sampleRate, maxGroupDelayMs);
-        velvetSequence[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
+        if (useOptVelvetFilters){
+            velvetSequence[k].initialize_from_string(opt_velvet_arrays[k]);
+        }
+        else{
+            velvetSequence[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
+        }
         
         //initialise panner inputs
         pannerInputs[k] = 0.f;
@@ -328,7 +337,22 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
     }
 }
     
-
+juce::String* StereoWidenerAudioProcess::initialise_velvet_from_file(const juce::File &filetoread){
+    if (! fileToRead.existsAsFile())
+                return;  // file doesn't exist
+    
+    juce::String* opt_velvet_arrays = new juce::String[2];
+    if (std::unique_ptr<juce::FileInputStream> inputStream { fileToRead.createInputStream() })
+    {
+        numLines = 0;
+        while (! inputStream->isExhausted())
+        {
+            auto line = inputStream.readNextLine();
+            opt_velvet_arrays[numLines++] = line;
+        }
+    }
+    return opt_velvet_arrays;
+}
 //==============================================================================
 bool StereoWidenerAudioProcessor::hasEditor() const
 {

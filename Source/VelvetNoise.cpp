@@ -16,6 +16,33 @@ VelvetNoise::~VelvetNoise(){
     delete [] impulseValues;
 }
 
+void VelvetNoise::initialize_from_string(juce::String opt_vn_filter){
+    //since we don't know the size of these, we make them vectorss
+    std::vector tempImpulsePositions;
+    std::vector tempImpulseValues;
+    string nextNumber;
+
+    int numLocations = 0;
+    while (getline(opt_vn_filter, nextNumber, ' ')) {
+        // store token string in the vector
+        if ((float)nextNumber != 0.0f){
+            tempImpulsePositions.push_back(numLocations)
+            tempImpulseValues.push_back((float)nextNumber);
+        }
+        numLocations++;
+    }
+    seqLength = tempImpulsePositions.size();
+    //convert vectors to arrays
+    impulsePositions = new int [seqLength];
+    impulseValues = new float [seqLength];
+    
+    for (int k= 0; k < seqLength; k++){
+        impulsePositions[k] = tempImpulsePositions.at(k);
+        impulseValues[k] = tempImpulseValues.at(k);
+    }
+    
+}
+
 void VelvetNoise::initialize(float SR, float L, int gS, float targetDecaydB, bool logDistribution){
     sampleRate = SR;
     length = (int) (sampleRate * L * 1e-3);

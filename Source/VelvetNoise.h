@@ -12,6 +12,8 @@
 #include "JuceHeader.h"
 #include "DelayLine.h"
 #include <random>
+#include <bits/stdc++.h>
+
 
 class VelvetNoise{
 public:
@@ -19,6 +21,7 @@ public:
     ~VelvetNoise();
     
     void initialize(float sR, float L, int gS, float targetDecaydB, bool logDistribution);
+    void initialize_from_string(juce::String opt_vn_filter);
     float process(const float input);
     void update(int newGridSize);
     void setImpulseLocationValues();
