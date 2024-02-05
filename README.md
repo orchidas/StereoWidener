@@ -8,6 +8,9 @@ The filterbank consists of a lowpass and highpass in cascade, which can be energ
 <img width="345" alt="Screen Shot 2023-10-21 at 10 55 50 AM" src="https://github.com/orchidas/StereoWidener/assets/18227419/e55f4fcd-f91a-406a-92fb-c474f27cd56a">
 </p>
 
+### For MacOS users
+Copy the AU/VST3 build (in Builds/MacOSX/build/Debug) to /Library/Audio/Plugins/Components. These are the .component and vst3 files respectively. The next time you restart your DAW the plugin should show up under the developer name **orchi**.
+
 ### Theory
 Coming soon...
 
