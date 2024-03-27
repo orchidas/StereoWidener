@@ -122,6 +122,28 @@ void StereoWidenerAudioProcessor::changeProgramName (int index, const juce::Stri
 {
 }
 
+//read optimised VN file
+juce::String* MainComponent::initialise_velvet_from_file(const juce::File &fileToRead){
+
+    if (! fileToRead.exists()){
+        throw std::runtime_error("File does not exist");
+        return NULL;  // file doesn't exist
+    }
+   
+    //filters for each channel are written in a new line
+    juce::String* opt_velvet_arrays = new juce::String[2];
+    if (std::unique_ptr<juce::FileInputStream> inputStream { fileToRead.createInputStream() })
+    {
+        int numLines = 0;
+        while (! inputStream->isExhausted())
+        {
+            auto line = inputStream->readNextLine();
+            opt_velvet_arrays[numLines++] = line;
+        }
+    }
+    return opt_velvet_arrays;
+}
+
 //==============================================================================
 void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
@@ -129,10 +151,7 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     // initialisation that you need..
     allpassCascade = new AllpassBiquadCascade[numChannels];
     velvetSequence = new VelvetNoise[numChannels];
-    
-    if (useOptVelvetFilters){
-        juce::String* opt_velvet_arrays = initialiise_velvet_from_file(opt_vn_file);
-    }
+    juce::String* opt_velvet_arrays = initialise_velvet_from_file(opt_vn_file);
     
     pan = new Panner[numFreqBands * numChannels];
     amp_preserve_filters = new LinkwitzCrossover* [numFreqBands * numChannels];
@@ -329,30 +348,13 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 float panner_output = pan[count++].process(pannerInputs);
                 output += panner_output;
             }
-            //output channels from panner are added
-//            if (!(*isAmpPreserve))
-//                output = std::sqrt(output);
+
             buffer.setSample(chan, i, output);
         }
     }
 }
     
-juce::String* StereoWidenerAudioProcess::initialise_velvet_from_file(const juce::File &filetoread){
-    if (! fileToRead.existsAsFile())
-                return;  // file doesn't exist
-    
-    juce::String* opt_velvet_arrays = new juce::String[2];
-    if (std::unique_ptr<juce::FileInputStream> inputStream { fileToRead.createInputStream() })
-    {
-        numLines = 0;
-        while (! inputStream->isExhausted())
-        {
-            auto line = inputStream.readNextLine();
-            opt_velvet_arrays[numLines++] = line;
-        }
-    }
-    return opt_velvet_arrays;
-}
+
 //==============================================================================
 bool StereoWidenerAudioProcessor::hasEditor() const
 {

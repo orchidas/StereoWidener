@@ -17,20 +17,23 @@ VelvetNoise::~VelvetNoise(){
 }
 
 void VelvetNoise::initialize_from_string(juce::String opt_vn_filter){
-    //since we don't know the size of these, we make them vectorss
-    std::vector tempImpulsePositions;
-    std::vector tempImpulseValues;
-    string nextNumber;
+    //since we don't know the size of these, we make them vectors
+    std::vector<int> tempImpulsePositions;
+    std::vector<float> tempImpulseValues;
+    std::string nextNumber;
+    
+    //separate all characters in string by space
+    juce::StringArray tokens;
+    tokens.addTokens (opt_vn_filter, " ");
 
-    int numLocations = 0;
-    while (getline(opt_vn_filter, nextNumber, ' ')) {
-        // store token string in the vector
-        if ((float)nextNumber != 0.0f){
-            tempImpulsePositions.push_back(numLocations)
-            tempImpulseValues.push_back((float)nextNumber);
+    for (int i=0; i<tokens.size(); i++)
+    {
+        if (tokens[i].getFloatValue() != 0.0f){
+            tempImpulsePositions.push_back(i);
+            tempImpulseValues.push_back(tokens[i].getFloatValue());
         }
-        numLocations++;
     }
+    
     seqLength = tempImpulsePositions.size();
     //convert vectors to arrays
     impulsePositions = new int [seqLength];

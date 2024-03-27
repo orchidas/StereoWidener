@@ -12,7 +12,6 @@
 #include "JuceHeader.h"
 #include "DelayLine.h"
 #include <random>
-#include <bits/stdc++.h>
 
 
 class VelvetNoise{
