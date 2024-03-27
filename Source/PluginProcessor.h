@@ -60,6 +60,7 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     inline float onePoleFilter(float input, float previous_output);
+    juce::String initialiise_velvet_from_file(const juce::File &filetoread);
 
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
@@ -83,18 +84,20 @@ private:
     ButterworthFilter** energy_preserve_filters;
     int density = 1000;
     float targetDecaydB = 10.;
-    bool logDistribution = true;                    //whether to concentrate VN impulses at the beginning
+    bool logDistribution = true;              //whether to concentrate VN impulses at the beginning
+    bool useOptVelvetFilters = true;         //whether to use optimised VN filters
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
     float prevWidthLower, curWidthLower;
     float prevWidthHigher, curWidthHigher;
     float prevCutoffFreq, curCutoffFreq;
-    float smooth_factor;   //one pole filter for parameter update
+    float smooth_factor;                       //one pole filter for parameter update
+    const juce::File opt_vn_file = juce::File("/Users/orchisamadas/Documents/AudioApps/StereoWidener/Resources/opt_vn_filter.txt");
     enum{
         vnLenMs = 15,
-        smoothingTimeMs = 5,
-        maxGroupDelayMs = 30,
+        smoothingTimeMs = 10,
+        maxGroupDelayMs = 15,
         numBiquads = 200,
         prewarpFreqHz = 1000,
     };
