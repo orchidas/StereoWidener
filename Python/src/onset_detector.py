@@ -14,8 +14,8 @@ class OnsetDetector():
     def __init__(self,
                  fs: float,
                  attack_time_ms: float = 5.0,
-                 release_time_ms: float = 50.0,
-                 min_onset_hold_ms: float = 20.0,
+                 release_time_ms: float = 20.0,
+                 min_onset_hold_ms: float = 80.0,
                  min_onset_sep_ms: float = 50.0):
         """
         Args:
@@ -148,7 +148,6 @@ class OnsetDetector():
         onset_pos = np.zeros_like(time_vector)
         onset_idx = np.where(self._onset_flag)[0]
         onset_pos[onset_idx] = 1.0
-        print(onset_idx)
 
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.plot(time_vector, input_signal, label='input signal')
@@ -157,7 +156,6 @@ class OnsetDetector():
         ax.plot(time_vector, onset_pos, 'k--', label='onsets')
         ax.legend(loc='lower left')
         ax.set_ylim([-1.0, 1.0])
-        ax.set_xlim([0, 5.0])
         plt.show()
 
         return ax
@@ -166,8 +164,10 @@ class OnsetDetector():
 class LeakyIntegrator():
     """Leaky integrator for signal envelope detection"""
 
-    def __init__(self, fs: float, attack_time_ms: float,
-                 release_time_ms: float):
+    def __init__(self,
+                 fs: float,
+                 attack_time_ms: float = 5.0,
+                 release_time_ms: float = 50.0):
         self.fs = fs
         self.attack_time_ms = attack_time_ms
         self.release_time_ms = release_time_ms

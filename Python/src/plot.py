@@ -5,11 +5,12 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from scipy import interpolate
 from scipy.signal import sosfreqz
-from utils import db, hertz_to_erbscale, erbscale_to_hertz
+from utils import db, db_floor, hertz_to_erbscale, erbscale_to_hertz
 
 FreqTicks = namedtuple("FreqTicks", ["ticks", "labels"])
-AudFreqTicks = FreqTicks(ticks=[20, 50, 100, 250, 500, 1e3, 2e3, 4e3, 8e3, 16e3],
-                         labels=[20, 50, 100, 250, 500, "1k", "2k", "4k", "8k", "16k"])
+AudFreqTicks = FreqTicks(
+    ticks=[20, 50, 100, 250, 500, 1e3, 2e3, 4e3, 8e3, 16e3],
+    labels=[20, 50, 100, 250, 500, "1k", "2k", "4k", "8k", "16k"])
 
 
 def erbspace(fmin: float, fmax: float, n: int) -> np.ndarray:
@@ -79,7 +80,14 @@ def semiaudplot(
             plots.extend(ax.plot(fn, yy, *args, **pyplot_kwargs))
             if marker:
                 kwargs_c["color"] = plots[-1].get_c()
-                plots.extend(ax.plot(f, yi, marker=marker, linestyle='', *args, **kwargs_c, label=None))
+                plots.extend(
+                    ax.plot(f,
+                            yi,
+                            marker=marker,
+                            linestyle='',
+                            *args,
+                            **kwargs_c,
+                            label=None))
         else:
             if marker:
                 pyplot_kwargs['marker'] = marker
@@ -89,6 +97,7 @@ def semiaudplot(
     ax.set_xticks(AudFreqTicks.ticks, AudFreqTicks.labels)
     ax.set_xlabel("Frequency (Hz)")
     return plots
+
 
 def plot_icc_matrix(icc_matrix: np.ndarray,
                     freqs: np.ndarray,
@@ -133,19 +142,75 @@ def plot_icc_matrix(icc_matrix: np.ndarray,
     return ax
 
 
+def time_plot(
+    x: np.ndarray,
+    fs: float,
+    *args,
+    db_scale: bool = False,
+    timeaxis: int = 0,
+    ax: Optional[Axes] = None,
+    start_time: float = 0,
+    **pyplt_kwargs,
+) -> List[plt.Line2D]:
+    """Plot a time-domain series, optionally on log-amplitude scale.
+
+    Args:
+        x (np.ndarray):  The signal to plot.
+        fs (float):  Sample rate (Hertz)
+        db_scale (bool, optional):  Plot on log-amplitude scale, by default False
+        timeaxis (int, optional):  The axis of `x` to interpret as the time series, by default 0.
+        ax (Axes, optional): Provide the axes on which to plot, by default None
+        start_time (float, optional): The start time of the time axis (seconds). Defaults to 0.
+        pyplt_kwargs (**kwargs): Additional keyword arguments are passed to the
+            matplotlib.pyplot plotting function.
+
+    Returns:
+        List[plt.Line2D]: List of plotted lines.
+
+    Raises:
+        ValueError: Checks dimensions of `x` and that `timeaxis` is in range.
+    """
+    if x.ndim > 2:
+        raise ValueError(
+            f"x must have at most two dimensions, it has {x.ndim} dimensions")
+    permitted_timeaxis = (1, -1, 0)
+    if timeaxis not in permitted_timeaxis:
+        raise ValueError(
+            f"timeaxis should be one of {permitted_timeaxis}, got {timeaxis}")
+    if timeaxis != 0:
+        x = np.moveaxis(x, timeaxis, destination=0)
+    length = x.shape[0]
+    t = np.linspace(0, float(length - 1) / fs, length) + start_time
+    if ax is None:
+        ax = plt.gca()
+    plots = []
+    kwargs_c = pyplt_kwargs.copy()
+    if db_scale:
+        plots.extend(ax.plot(t, db(db_floor(np.abs(x))), *args, **kwargs_c))
+        ax.set_ylabel("Amplitude (absolute, dB)")
+    else:
+        plots.extend(ax.plot(t, x, *args, **kwargs_c))
+        ax.set_ylabel("Amplitude (linear)")
+    ax.set_xlabel("Time (s)")
+    ax.grid(True)
+
+    return plots
+
+
 def plot_filt_response(sos, worN=1024):
+    """Plot SOS filter response, for worN number of bins in the frequency axis"""
     w, h = sosfreqz(sos, worN=worN)
-    plt.subplot(2,1,1)
-    plt.plot(w/np.pi, db(h))
+    plt.subplot(2, 1, 1)
+    plt.plot(w / np.pi, db(h))
     plt.ylim(-75, 5)
     plt.grid(True)
     plt.yticks([0, -20, -40, -60])
     plt.ylabel('Gain [dB]')
     plt.title('Frequency Response')
-    plt.subplot(2,1,2)
-    plt.plot(w/np.pi, np.angle(h))
+    plt.subplot(2, 1, 2)
+    plt.plot(w / np.pi, np.angle(h))
     plt.grid(True)
-    plt.yticks([-np.pi, -0.5*np.pi, 0, 0.5*np.pi, np.pi],
+    plt.yticks([-np.pi, -0.5 * np.pi, 0, 0.5 * np.pi, np.pi],
                [r'$-\pi$', r'$-\pi/2$', '0', r'$\pi/2$', r'$\pi$'])
     plt.ylabel('Phase [rad]')
     plt.xlabel('Normalized frequency (1.0 = Nyquist)')

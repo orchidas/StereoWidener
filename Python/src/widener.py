@@ -1,12 +1,13 @@
 import numpy as np
 import numpy.typing as npt
 import pyfar as pf
-from typing import Tuple
+from typing import Tuple, Optional, Dict
 from abc import ABC
 from enum import Enum
 from pathlib import Path
 from velvet import process_velvet
 from allpass import process_allpass
+from onset_detector import OnsetDetector, LeakyIntegrator
 from utils import calculate_interchannel_coherence, calculate_interchannel_cross_correlation_matrix
 
 VN_PATH = Path('../../../Resources/init_vn_filters.txt')
@@ -27,19 +28,28 @@ class DecorrelationType(Enum):
 class StereoWidener(ABC):
     """Parent stereo widener class"""
 
-    def __init__(self, input_stereo: np.ndarray, fs: float,
-                 decorr_type: DecorrelationType, beta: float):
+    def __init__(self,
+                 input_stereo: np.ndarray,
+                 fs: float,
+                 decorr_type: DecorrelationType,
+                 beta: float,
+                 detect_transient: bool = False,
+                 onset_detection_params: Optional[Dict] = None):
         """Args: 
-		   input_stereo (ndarray) : input stereo signal
-		   fs (float) : sampling frequency
-		   decorr_type (Decorrelation type) : decorrelation type (allpass, velvet or opt_velvet)
-		   beta_init (between 0 and pi/2): crossfading factor (initial)
-		 """
+           input_stereo (ndarray) : input stereo signal
+           fs (float) : sampling frequency
+           decorr_type (Decorrelation type) : decorrelation type (allpass, velvet or opt_velvet)
+           beta (between 0 and pi/2): crossfading factor (initial)
+           detect_transient (bool): whether to add a transient detection block
+           onset_detection_params (dict, optional): dictionary of parameters for onset detection
+         """
 
         self.input_signal = input_stereo
         self.fs = fs
         self.decorr_type = decorr_type
         self.beta = beta
+        self.detect_transient = detect_transient
+        self.leaky = LeakyIntegrator(self.fs)
 
         _, self.num_channels = input_stereo.shape
         if self.num_channels > 2:
@@ -49,6 +59,16 @@ class StereoWidener(ABC):
             raise RuntimeError("Input signal must be stereo!")
 
         self.decorrelated_signal = self.decorrelate_input()
+        if self.detect_transient:
+            if onset_detection_params is not None:
+                self.onset_detector = OnsetDetector(
+                    self.fs,
+                    min_onset_hold_ms=onset_detection_params[
+                        'min_onset_hold_ms'],
+                    min_onset_sep_ms=onset_detection_params['min_onset_sep_ms']
+                )
+            else:
+                self.onset_detector = OnsetDetector(self.fs)
 
     def decorrelate_input(self) -> np.ndarray:
         if self.decorr_type == DecorrelationType.ALLPASS:
@@ -65,6 +85,15 @@ class StereoWidener(ABC):
             raise NotImplementedError("Other decorrelators are not available")
         return decorrelated_signal
 
+    def get_onset_flag(self,
+                       input: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+        """Returns the onset locations and the signal envelope"""
+        self.onset_detector.process(input)
+        return (self.onset_detector.onset_flag, self.onset_detector.signal_env)
+
+    def get_signal_envelope(self, input: npt.NDArray) -> npt.NDArray:
+        return self.leaky.process(input)
+
     def process(self):
         pass
 
@@ -72,19 +101,41 @@ class StereoWidener(ABC):
 class StereoWidenerBroadband(StereoWidener):
     """Broadband stereo widener class"""
 
-    def __init__(self, input_stereo: np.ndarray, fs: float,
-                 decorr_type: DecorrelationType, beta: float):
-        super().__init__(input_stereo, fs, decorr_type, beta)
+    def __init__(self,
+                 input_stereo: np.ndarray,
+                 fs: float,
+                 decorr_type: DecorrelationType,
+                 beta: float,
+                 detect_transient: bool = False,
+                 onset_detection_params: Optional[Dict] = None):
+        super().__init__(input_stereo, fs, decorr_type, beta, detect_transient)
 
     def update_beta(self, new_beta: float):
         self.beta = new_beta
 
     def process(self) -> np.ndarray:
         stereo_output = np.zeros_like(self.input_signal)
+
         for chan in range(self.num_channels):
             stereo_output[:, chan] = np.cos(
                 self.beta) * self.input_signal[:, chan] + np.sin(
                     self.beta) * self.decorrelated_signal[:, chan]
+
+            # if an onset is detected, the input signal is passed as it is
+            if self.detect_transient:
+                print("I am here")
+                onset_flags, input_env = super().get_onset_flag(
+                    self.input_signal[:, chan])
+                # this is what we want the gains to be
+                desired_env = super().get_signal_envelope(stereo_output[:,
+                                                                        chan])
+                onset_idx = np.where(onset_flags)[0]
+                # some gain normalisation is needed to prevent pops
+                stereo_output[onset_idx,
+                              chan] = self.input_signal[onset_idx, chan] * (
+                                  desired_env[onset_idx] /
+                                  input_env[onset_idx])
+
         return stereo_output
 
     @staticmethod
@@ -101,14 +152,14 @@ class StereoWidenerFrequencyBased(StereoWidener):
                  decorr_type: DecorrelationType, beta: Tuple[float, float],
                  cutoff_freq: float):
         """Frequency based stereo widener
-		Args:
-			input_stereo (ndarray): input stereo signal
-			fs (float): sampling rate
-			filterbank_type (Filterbank type): amplitude or energy preserving
-			decorr_type (Decorrelation type): allpass, velvet or opt-velvet
-			beta (Tuple(float, float)): cross-fading gain for low and high frequencies
-			cutoff_freq (float): cutoff frequency of filterbank (Hz)
-		"""
+        Args:
+            input_stereo (ndarray): input stereo signal
+            fs (float): sampling rate
+            filterbank_type (Filterbank type): amplitude or energy preserving
+            decorr_type (Decorrelation type): allpass, velvet or opt-velvet
+            beta (Tuple(float, float)): cross-fading gain for low and high frequencies
+            cutoff_freq (float): cutoff frequency of filterbank (Hz)
+        """
 
         super().__init__(input_stereo, fs, decorr_type, beta)
         self.filterbank_type = filterbank_type

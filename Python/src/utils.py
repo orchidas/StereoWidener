@@ -40,6 +40,19 @@ def db(x: npt.NDArray[float], /, *, is_squared: bool = False, allow_inf: bool = 
     factor = 10.0 if is_squared else 20.0
     return factor * np.log10(x)
 
+def db_floor(x: np.ndarray, floor: float = -120.0) -> np.ndarray:
+    """Apply a lower floor to a set of values, i.e. any values lower than the floor value are set to that value.
+    The floor values is specified in dB, whereas the values themselves are linear.
+    Args:
+        x (np.ndarray): Value array (linear)
+        floor (float): Floor in dB, by default -120.0
+    Returns:
+        np.ndarray: Floor'd array
+    """
+    min_lin = db2lin(floor)
+    x_clip = np.maximum(x, min_lin)
+    return x_clip
+
 def ms_to_samps(ms: npt.NDArray[float], /, fs: float) -> npt.NDArray[int]:
     """Calculate the nearest integer number of samples corresponding to the given time duration in milliseconds.
 
