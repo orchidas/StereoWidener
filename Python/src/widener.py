@@ -1,14 +1,17 @@
 import numpy as np
 import numpy.typing as npt
 import pyfar as pf
+from scipy.signal import hann
 from typing import Tuple, Optional, Dict
 from abc import ABC
 from enum import Enum
 from pathlib import Path
 from velvet import process_velvet
 from allpass import process_allpass
-from onset_detector import OnsetDetector, LeakyIntegrator
-from utils import calculate_interchannel_coherence, calculate_interchannel_cross_correlation_matrix
+from onset_detector import OnsetDetector
+from utils import (calculate_interchannel_coherence, ms_to_samps,
+                   calculate_interchannel_cross_correlation_matrix,
+                   half_hann_fade)
 
 VN_PATH = Path('../../../Resources/init_vn_filters.txt')
 OPT_VN_PATH = Path('../../../Resources/opt_vn_filters.txt')
@@ -34,7 +37,8 @@ class StereoWidener(ABC):
                  decorr_type: DecorrelationType,
                  beta: float,
                  detect_transient: bool = False,
-                 onset_detection_params: Optional[Dict] = None):
+                 onset_detection_params: Optional[Dict] = None,
+                 xfade_win_len_ms: float = 1.0):
         """Args: 
            input_stereo (ndarray) : input stereo signal
            fs (float) : sampling frequency
@@ -42,6 +46,7 @@ class StereoWidener(ABC):
            beta (between 0 and pi/2): crossfading factor (initial)
            detect_transient (bool): whether to add a transient detection block
            onset_detection_params (dict, optional): dictionary of parameters for onset detection
+           xfade_win_len_ms (float): crossfading window used during transients
          """
 
         self.input_signal = input_stereo
@@ -49,7 +54,6 @@ class StereoWidener(ABC):
         self.decorr_type = decorr_type
         self.beta = beta
         self.detect_transient = detect_transient
-        self.leaky = LeakyIntegrator(self.fs)
 
         _, self.num_channels = input_stereo.shape
         if self.num_channels > 2:
@@ -69,6 +73,12 @@ class StereoWidener(ABC):
                 )
             else:
                 self.onset_detector = OnsetDetector(self.fs)
+            self.xfade_win_len_samps = int(
+                ms_to_samps(xfade_win_len_ms, self.fs))
+            self.xfade_in_win = half_hann_fade(self.xfade_win_len_samps,
+                                               fade_out=False)
+            self.xfade_out_win = half_hann_fade(self.xfade_win_len_samps,
+                                                fade_out=True)
 
     def decorrelate_input(self) -> np.ndarray:
         if self.decorr_type == DecorrelationType.ALLPASS:
@@ -85,14 +95,10 @@ class StereoWidener(ABC):
             raise NotImplementedError("Other decorrelators are not available")
         return decorrelated_signal
 
-    def get_onset_flag(self,
-                       input: npt.ArrayLike) -> Tuple[np.ndarray, np.ndarray]:
+    def get_onset_flag(self, input: npt.ArrayLike) -> np.ndarray:
         """Returns the onset locations and the signal envelope"""
         self.onset_detector.process(input)
-        return (self.onset_detector.onset_flag, self.onset_detector.signal_env)
-
-    def get_signal_envelope(self, input: npt.NDArray) -> npt.NDArray:
-        return self.leaky.process(input)
+        return self.onset_detector.onset_flag
 
     def process(self):
         pass
@@ -107,8 +113,10 @@ class StereoWidenerBroadband(StereoWidener):
                  decorr_type: DecorrelationType,
                  beta: float,
                  detect_transient: bool = False,
-                 onset_detection_params: Optional[Dict] = None):
-        super().__init__(input_stereo, fs, decorr_type, beta, detect_transient)
+                 onset_detection_params: Optional[Dict] = None,
+                 xfade_win_len_ms: float = 1.0):
+        super().__init__(input_stereo, fs, decorr_type, beta, detect_transient,
+                         onset_detection_params, xfade_win_len_ms)
 
     def update_beta(self, new_beta: float):
         self.beta = new_beta
@@ -123,20 +131,34 @@ class StereoWidenerBroadband(StereoWidener):
 
             # if an onset is detected, the input signal is passed as it is
             if self.detect_transient:
-                print("I am here")
-                onset_flags, input_env = super().get_onset_flag(
-                    self.input_signal[:, chan])
-                # this is what we want the gains to be
-                desired_env = super().get_signal_envelope(stereo_output[:,
-                                                                        chan])
+                onset_flags = super().get_onset_flag(self.input_signal[:,
+                                                                       chan])
                 onset_idx = np.where(onset_flags)[0]
-                # some gain normalisation is needed to prevent pops
-                stereo_output[onset_idx,
-                              chan] = self.input_signal[onset_idx, chan] * (
-                                  desired_env[onset_idx] /
-                                  input_env[onset_idx])
+                # all the onset positions should have the input signal
+                stereo_output[onset_idx, chan] = self.input_signal[onset_idx,
+                                                                   chan]
+
+                # apply fade in and fade out windows before the onsets
+                consecutive_onset_idx = self.consecutive_elements(onset_idx)
+                consecutive_onset_start_idx = [
+                    array[0] for array in consecutive_onset_idx
+                ]
+
+                for start_idx in consecutive_onset_start_idx:
+                    stereo_output[start_idx -
+                                  self.xfade_win_len_samps:start_idx,
+                                  chan] *= self.xfade_out_win
+                    stereo_output[
+                        start_idx - self.xfade_win_len_samps:start_idx,
+                        chan] += self.xfade_in_win * self.input_signal[
+                            start_idx - self.xfade_win_len_samps:start_idx,
+                            chan]
 
         return stereo_output
+
+    @staticmethod
+    def consecutive_elements(data: npt.NDArray, stepsize: int = 1):
+        return np.split(data, np.where(np.diff(data) != stepsize)[0] + 1)
 
     @staticmethod
     def calculate_correlation(output_signal: np.ndarray) -> float:
