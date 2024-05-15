@@ -27,8 +27,8 @@ void TransientHandler::prepare_xfade_windows(){
     
     for(int i = 0; i < buffer_size; i++){
         //half hann windows
-        xfade_in_win[i] = 0.5*(1 - std::cos(PI * (i+1)));
-        xfade_out_win[i] = 0.5*(1 - std::cos(PI * i));
+        xfade_in_win[i] = 0.5*(1 - std::cos(PI * i/buffer_size));
+        xfade_out_win[i] = 0.5*(1 - std::cos(PI * (i/buffer_size + 1)));
         xfade_buffer[i] = 0.0f;
         output_buffer[i] = 0.0f;
     }
@@ -71,31 +71,37 @@ float* TransientHandler::process(float* input_buffer, float* widener_output_buff
     if (0 < hold_counter && hold_counter < min_frames_hold){
         output_buffer = this->copy_buffer(input_buffer, output_buffer);
         hold_counter++;
-        //std::cout << "Hold counter: " << hold_counter << std::endl;
     }
     
     else if (0 < inhibit_counter && inhibit_counter < min_frames_inhibit){
         output_buffer = this->copy_buffer(widener_output_buffer, output_buffer);
         inhibit_counter++;
-        //std::cout << "Inhibit counter: " << inhibit_counter << std::endl;
     }
     
     else{
         hold_counter = 0;
         inhibit_counter = 0;
-        
-        if (onset.onset_flag){
+        bool cur_onset_flag = onset.onset_flag;
+        if (cur_onset_flag){
+            //onset fade-in
             this->apply_xfade(input_buffer, widener_output_buffer);
             output_buffer = this->copy_buffer(xfade_buffer, output_buffer);
             hold_counter++;
-            std::cout << "Onset detected" << std::endl;
+            //std::cout << "Onset detected" << std::endl;
         }
-        else if (onset.offset_flag){
+        else if(prev_onset_flag && onset.offset_flag){
+            //offset fade-out
             this->apply_xfade(widener_output_buffer, input_buffer);
             output_buffer = this->copy_buffer(xfade_buffer, output_buffer);
             inhibit_counter++;
-            std::cout << "Offset detected" << std::endl;
+            //std::cout << "Offset detected" << std::endl;
         }
+        else{
+            //otherwise
+            output_buffer = this->copy_buffer(widener_output_buffer, output_buffer);
+            inhibit_counter++;
+        }
+        prev_onset_flag = cur_onset_flag;
     }
     return output_buffer;
 

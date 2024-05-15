@@ -37,7 +37,7 @@ public:
     float* process(float* input_buffer){
         float prev_env_samp;
         for (int i = 0; i< buffer_size; i++){
-            if (i ==  0)
+            if (i == 0)
                 prev_env_samp = signal_env[buffer_size-1];
             else
                 prev_env_samp = signal_env[i-1];

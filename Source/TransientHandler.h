@@ -35,6 +35,8 @@ private:
     float* xfade_out_win;
     float* xfade_buffer;
     float* output_buffer;
+    
+    bool prev_onset_flag = false;   //was there an onset previously?
     //onset detector object
     OnsetDetector onset;
     //

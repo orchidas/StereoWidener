@@ -88,8 +88,8 @@ private:
     int density = 1000;
     float targetDecaydB = 10.;
     bool logDistribution = true;              //whether to concentrate VN impulses at the beginning
-    bool useOptVelvetFilters = true;         //whether to use optimised VN filters
-    bool handleTransients = false;           //whether to activate transient handling block
+    bool useOptVelvetFilters = false;         //whether to use optimised VN filters
+    bool handleTransients = true;             //whether to activate transient handling block
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
@@ -107,5 +107,6 @@ private:
     };
     std::vector<std::vector<float>> inputData;
     std::vector<std::vector<float>> outputData;
+    float** final_output;
 
 };

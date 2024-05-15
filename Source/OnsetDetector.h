@@ -22,9 +22,9 @@ public:
     ~OnsetDetector();
     void prepare(int bufferSize, float sampleRate);
     void process(float* input_buffer);
-    bool check_local_peak();
-    bool check_direction(bool is_rising);
-    bool check_onset(float cur_threshold, bool check_offset);
+    inline bool check_local_peak();
+    inline bool check_direction(bool is_rising);
+    inline bool check_onset(float cur_threshold, bool check_offset);
     float* get_signal_envelope(float* input_buffer);
 
 private:
@@ -35,11 +35,12 @@ private:
         attack_time_ms = 5,
         release_time_ms = 50,
     };
-    float* threshold;           //dynamic threshold for onset calculation
+    float  threshold;           //dynamic threshold for onset calculation
     float running_mean_env;     //running mean of the signal envelope
     long num_samps = 0;         //keeps track of number of samples in input signal
     float second_last_samp = 0.0;
     float last_samp = 0.0;
     float cur_samp = 0.0;
+    float forget_factor = 0.0;   //forget factor for threshold calculation
 
     };

@@ -87,8 +87,7 @@ void OnsetDetector::process(float* input_buffer){
         // if a local peak is detected, update threshold to 2xrunning_mean, else
         // keep the last value. Do this with an exponential smoother.
         forget_factor = this->check_local_peak()?0.01:0.99;
-        threshold = (1 - forget_factor) * 2.0 * running_mean_env + (forget_factor * threshold);
-        //std::cout << "Threshold :" << threshold << std::endl;
+        threshold = (1 - forget_factor) * 4.0 * running_mean_env + (forget_factor * threshold);
         
         //if onset or offset has already been detected, continue
         if (onset_flag || offset_flag){

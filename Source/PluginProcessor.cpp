@@ -159,6 +159,9 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     gain_multiplier = new float[numFreqBands];
     temp_output = new float[numFreqBands];
     pannerInputs = new float[numChannels];
+    transient_handler = new TransientHandler[numChannels];
+    final_output = new float* [numChannels];
+    
     int count = 0;
 
     for(int k = 0; k < numChannels; k++){
@@ -177,6 +180,8 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
         
         //initialise panner inputs
         pannerInputs[k] = 0.f;
+        //final output buffer
+        final_output[k] = new float[samplesPerBlock];
 
         for (int i = 0; i < numFreqBands; i++){
             temp_output[i] = 0.0;
@@ -203,8 +208,8 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
         }
     }
     
-    inputData = std::vector<std::vector<float>>(samplesPerBlock, std::vector<float>(numChannels, 0.0f));
-    outputData = std::vector<std::vector<float>>(samplesPerBlock, std::vector<float>(numChannels, 0.0f));
+    inputData = std::vector<std::vector<float>>(numChannels, std::vector<float>(samplesPerBlock, 0.0f));
+    outputData = std::vector<std::vector<float>>(numChannels, std::vector<float>(samplesPerBlock, 0.0f));
     prevWidthLower = 0.f;
     curWidthLower = 0.f;
     prevWidthHigher = 0.0f;
@@ -316,7 +321,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
         const float* channelInData = buffer.getReadPointer(chan, 0);
 
         for (int i = 0; i < numSamples; i++){
-            inputData[i][chan] = channelInData[i];
+            inputData[chan][i] = channelInData[i];
         }
     }
     
@@ -329,10 +334,10 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
             
             //decorrelate input channel by convolving with VN sequence
             if (*hasAllpassDecorrelation)
-                decorr_output = allpassCascade[chan].process(inputData[i][chan]);
+                decorr_output = allpassCascade[chan].process(inputData[chan][i]);
             //or by passing through allpass cascade
             else
-                decorr_output = velvetSequence[chan].process(inputData[i][chan]);
+                decorr_output = velvetSequence[chan].process(inputData[chan][i]);
             
             //process in frequency bands
             for(int k = 0; k < numFreqBands; k++){
@@ -340,11 +345,11 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 float filtered_decorr_output = 0.0f;
                 //pass input and decorrelation output through filterbank
                 if (*isAmpPreserve){
-                    filtered_input = amp_preserve_filters[k][chan].process(inputData[i][chan]);
+                    filtered_input = amp_preserve_filters[k][chan].process(inputData[chan][i]);
                     filtered_decorr_output = amp_preserve_filters[numFreqBands + k][chan].process(decorr_output);
                 }
                 else{
-                    filtered_input = energy_preserve_filters[k][chan].process(inputData[i][chan]);
+                    filtered_input = energy_preserve_filters[k][chan].process(inputData[chan][i]);
                     filtered_decorr_output = energy_preserve_filters[numFreqBands + k][chan].process(decorr_output);
                 }
 
@@ -353,8 +358,20 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 float panner_output = pan[count++].process(pannerInputs);
                 output += panner_output;
             }
-            outputData[i][chan] = output;
-            buffer.setSample(chan, i, output);
+            outputData[chan][i] = output;
+            if (!handleTransients)
+                buffer.setSample(chan, i, output);
+        }
+    }
+    
+    // transient handling logic
+    if (handleTransients){
+        for(int chan = 0; chan < totalNumOutputChannels; chan++){
+            final_output[chan] = transient_handler[chan].process(&inputData[chan][0], &outputData[chan][0]);
+            for (int i = 0; i < numSamples; i++){
+                //std::cout << "Output :" << final_output[chan][i] << std::endl;
+                buffer.setSample(chan, i, final_output[chan][i]);
+            }
         }
     }
 }
