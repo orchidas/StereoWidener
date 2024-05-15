@@ -39,11 +39,13 @@ private:
     juce::Label isAmpPreserveLabel;
     juce::ToggleButton hasAllpassDecorrelation;
     juce::Label hasAllpassDecorrelationLabel;
+    juce::ToggleButton handleTransients;
+    juce::Label handleTransientsLabel;
     
     std::unique_ptr <juce::AudioProcessorValueTreeState::SliderAttachment> widthLowerAttach;
     std::unique_ptr <juce::AudioProcessorValueTreeState::SliderAttachment> widthHigherAttach;
     std::unique_ptr <juce::AudioProcessorValueTreeState::SliderAttachment> cutoffFrequencyAttach;
-    std::unique_ptr <juce::ParameterAttachment> isAmpPreserveAttach, hasAllpassDecorrelationAttach;
+    std::unique_ptr <juce::ParameterAttachment> isAmpPreserveAttach, hasAllpassDecorrelationAttach, handleTransientsAttach;
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StereoWidenerAudioProcessorEditor)

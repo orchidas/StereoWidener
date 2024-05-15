@@ -15,7 +15,7 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (300,450);
+    setSize (300,500);
     
     //add sliders and labels
     addAndMakeVisible(widthLowerSlider);
@@ -100,6 +100,31 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
     addAndMakeVisible(hasAllpassDecorrelationLabel);
     hasAllpassDecorrelationLabel.setText ("Allpass decorrelation", juce::dontSendNotification);
     hasAllpassDecorrelationLabel.setFont(juce::Font ("Times New Roman", 15.0f, juce::Font::plain));
+    
+    
+    
+    // add toggle button for choosing transient detector
+    addAndMakeVisible(handleTransients);
+    // [=] indicates a lambda function, it sets the parameterChangedCallback below
+    handleTransientsAttach = std::make_unique<juce::ParameterAttachment>(*vts.getParameter("handleTransients"), [=] (float value) {
+            bool isSelected = value == 1.0f;
+            handleTransients.setToggleState(isSelected, juce::sendNotificationSync);
+        });
+    
+    handleTransients.onClick = [=] {
+        //if toggle state is true, then
+        if (handleTransients.getToggleState())
+            handleTransientsAttach->setValueAsCompleteGesture(1.0f);
+        else
+            handleTransientsAttach->setValueAsCompleteGesture(0.0f);
+    };
+    handleTransientsAttach->sendInitialUpdate();
+    
+    //add labels
+    addAndMakeVisible(handleTransientsLabel);
+    handleTransientsLabel.setText ("Transient detection", juce::dontSendNotification);
+    handleTransientsLabel.setFont(juce::Font ("Transient detection", 15.0f, juce::Font::plain));
+    handleTransientsLabel.setFont(juce::Font ("Times New Roman", 15.0f, juce::Font::plain));
 }
     
 StereoWidenerAudioProcessorEditor::~StereoWidenerAudioProcessorEditor()
@@ -114,7 +139,7 @@ void StereoWidenerAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setFont (juce::Font ("Times New Roman", 20.0f, juce::Font::bold));
     g.setColour (juce::Colours::lightgrey);
-    g.drawText ("StereoWidener", 150, 400, 180, 50, true);
+    g.drawText ("StereoWidener", 150, 450, 180, 50, true);
 }
 
 void StereoWidenerAudioProcessorEditor::resized()
@@ -125,8 +150,13 @@ void StereoWidenerAudioProcessorEditor::resized()
     widthLowerSlider.setBounds (sliderLeft , 50, getWidth() - sliderLeft - 10, 80);
     widthHigherSlider.setBounds (sliderLeft , 150, getWidth() - sliderLeft - 10, 80);
     cutoffFrequencySlider.setBounds (sliderLeft , 250, getWidth() - sliderLeft - 10, 80);
+    
     isAmpPreserve.setBounds (sliderLeft, 320, getWidth() - sliderLeft - 10, 50);
     isAmpPreserveLabel.setBounds(sliderLeft + 50, 340, getWidth() - sliderLeft - 10, 20);
+    
     hasAllpassDecorrelation.setBounds (sliderLeft, 360, getWidth() - sliderLeft - 10, 50);
     hasAllpassDecorrelationLabel.setBounds(sliderLeft + 50, 380, getWidth() - sliderLeft - 10, 20);
+    
+    handleTransients.setBounds (sliderLeft, 400, getWidth() - sliderLeft - 10, 50);
+    handleTransientsLabel.setBounds(sliderLeft + 50, 420, getWidth() - sliderLeft - 10, 20);
 }

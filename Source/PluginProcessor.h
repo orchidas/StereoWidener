@@ -70,6 +70,7 @@ public:
     std::atomic<float>* cutoffFrequency;    //filterbank cutoff frequency
     std::atomic<float>* isAmpPreserve;      //calculations are amplitude or energy preserving
     std::atomic<float>* hasAllpassDecorrelation; //what decorrelator to use - VN or AP
+    std::atomic<float>* handleTransients;        //whether to have transient handline block
     const int numFreqBands = 2;
 
 private:
@@ -89,7 +90,6 @@ private:
     float targetDecaydB = 10.;
     bool logDistribution = true;              //whether to concentrate VN impulses at the beginning
     bool useOptVelvetFilters = false;         //whether to use optimised VN filters
-    bool handleTransients = true;             //whether to activate transient handling block
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;

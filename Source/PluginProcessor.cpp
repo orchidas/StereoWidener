@@ -47,6 +47,10 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
         (juce::ParameterID{"hasAllpassDecorrelation",1},
          "Allpass decorrelation",
          0, 1, 0),
+    std::make_unique<juce::AudioParameterInt>
+      (juce::ParameterID{"handleTransients",1},
+       "Transient detection",
+       0, 1, 0),
     })
 #endif
 {
@@ -56,6 +60,8 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
     cutoffFrequency = parameters.getRawParameterValue("cutoffFrequency");
     isAmpPreserve = parameters.getRawParameterValue("isAmpPreserve");
     hasAllpassDecorrelation = parameters.getRawParameterValue("hasAllpassDecorrelation");
+    handleTransients = parameters.getRawParameterValue("handleTransients");
+
 }
 
 StereoWidenerAudioProcessor::~StereoWidenerAudioProcessor(){}
@@ -359,17 +365,16 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 output += panner_output;
             }
             outputData[chan][i] = output;
-            if (!handleTransients)
+            if (! *handleTransients)
                 buffer.setSample(chan, i, output);
         }
     }
     
     // transient handling logic
-    if (handleTransients){
+    if (*handleTransients){
         for(int chan = 0; chan < totalNumOutputChannels; chan++){
             final_output[chan] = transient_handler[chan].process(&inputData[chan][0], &outputData[chan][0]);
             for (int i = 0; i < numSamples; i++){
-                //std::cout << "Output :" << final_output[chan][i] << std::endl;
                 buffer.setSample(chan, i, final_output[chan][i]);
             }
         }
