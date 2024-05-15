@@ -123,7 +123,7 @@ void StereoWidenerAudioProcessor::changeProgramName (int index, const juce::Stri
 }
 
 //read optimised VN file
-juce::String* MainComponent::initialise_velvet_from_file(const juce::File &fileToRead){
+juce::String* StereoWidenerAudioProcessor::initialise_velvet_from_file(const juce::File &fileToRead){
 
     if (! fileToRead.exists()){
         throw std::runtime_error("File does not exist");
@@ -151,7 +151,7 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     // initialisation that you need..
     allpassCascade = new AllpassBiquadCascade[numChannels];
     velvetSequence = new VelvetNoise[numChannels];
-    juce::String* opt_velvet_arrays = initialise_velvet_from_file(opt_vn_file);
+    //juce::String* opt_velvet_arrays = initialise_velvet_from_file(opt_vn_file);
     
     pan = new Panner[numFreqBands * numChannels];
     amp_preserve_filters = new LinkwitzCrossover* [numFreqBands * numChannels];
@@ -165,12 +165,13 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
         
         //initialise decorrelators
         allpassCascade[k].initialize(numBiquads, sampleRate, maxGroupDelayMs);
-        if (useOptVelvetFilters){
-            velvetSequence[k].initialize_from_string(opt_velvet_arrays[k]);
-        }
-        else{
+        
+//        if (useOptVelvetFilters){
+//            velvetSequence[k].initialize_from_string(opt_velvet_arrays[k]);
+//        }
+//        else{
             velvetSequence[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
-        }
+//        }
         
         //initialise panner inputs
         pannerInputs[k] = 0.f;

@@ -42,6 +42,7 @@ void VelvetNoise::initialize_from_string(juce::String opt_vn_filter){
     for (int k= 0; k < seqLength; k++){
         impulsePositions[k] = tempImpulsePositions.at(k);
         impulseValues[k] = tempImpulseValues.at(k);
+        //std::cout << impulsePositions[k] <<", " << impulseValues[k] << std::endl;
     }
     
 }

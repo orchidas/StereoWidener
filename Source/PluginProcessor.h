@@ -60,7 +60,7 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     inline float onePoleFilter(float input, float previous_output);
-    juce::String initialiise_velvet_from_file(const juce::File &filetoread);
+    juce::String* initialise_velvet_from_file(const juce::File &filetoread);
 
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
