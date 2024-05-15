@@ -14,6 +14,7 @@
 #include "LinkwitzCrossover.h"
 #include "ButterworthFilter.h"
 #include "AllpassBiquadCascade.h"
+#include "TransientHandler.h"
 //==============================================================================
 /**
 */
@@ -60,7 +61,7 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     inline float onePoleFilter(float input, float previous_output);
-    juce::String initialiise_velvet_from_file(const juce::File &filetoread);
+    juce::String* initialise_velvet_from_file(const juce::File &filetoread);
 
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
@@ -82,10 +83,13 @@ private:
     Panner* pan;
     LinkwitzCrossover** amp_preserve_filters;
     ButterworthFilter** energy_preserve_filters;
+    TransientHandler* transient_handler;
+    
     int density = 1000;
     float targetDecaydB = 10.;
     bool logDistribution = true;              //whether to concentrate VN impulses at the beginning
     bool useOptVelvetFilters = true;         //whether to use optimised VN filters
+    bool handleTransients = false;           //whether to activate transient handling block
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
@@ -102,5 +106,6 @@ private:
         prewarpFreqHz = 1000,
     };
     std::vector<std::vector<float>> inputData;
+    std::vector<std::vector<float>> outputData;
 
 };
