@@ -35,12 +35,12 @@ private:
         attack_time_ms = 5,
         release_time_ms = 50,
     };
-    float  threshold;           //dynamic threshold for onset calculation
-    float running_mean_env;     //running mean of the signal envelope
-    long num_samps = 0;         //keeps track of number of samples in input signal
-    float second_last_samp = 0.0;
+    float  threshold;                 //dynamic threshold for onset calculation
+    float running_mean_env;           //running mean of the signal envelope
+    unsigned long num_samps = 0;      //keeps track of number of samples in input signal
+    float second_last_samp = 0.0;     //last 3 samples of the signal envelope
     float last_samp = 0.0;
     float cur_samp = 0.0;
-    float forget_factor = 0.0;   //forget factor for threshold calculation
+    float forget_factor = 0.0;        //forget factor for threshold calculation
 
     };

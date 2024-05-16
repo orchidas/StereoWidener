@@ -80,6 +80,9 @@ void OnsetDetector::process(float* input_buffer){
             cur_samp = signal_env[i];
         }
         
+        //to prevent overflow
+        num_samps = num_samps < ULONG_MAX? num_samps:0;
+        
         //calculate running mean of the signal envelope
         float scaling = 1.0/(++num_samps);
         running_mean_env = signal_env[i] * scaling + (1-scaling) * running_mean_env;
