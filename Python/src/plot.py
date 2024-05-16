@@ -37,6 +37,7 @@ def semiaudplot(
     *args,
     n: int = 1024,
     marker: Optional[str] = None,
+    linestyle:Optional[str] = None,
     ax: Optional[Axes] = None,
     interp: bool = False,
     **pyplot_kwargs,
@@ -88,9 +89,30 @@ def semiaudplot(
                             *args,
                             **kwargs_c,
                             label=None))
+            if linestyle:
+                kwargs_c["color"] = plots[-1].get_c()
+                plots.extend(
+                    ax.plot(f,
+                            yi,
+                            linestyle=linestyle,
+                            *args,
+                            **kwargs_c,
+                            label=None))
+            if marker and linestyle:
+                kwargs_c["color"] = plots[-1].get_c()
+                plots.extend(
+                    ax.plot(f,
+                            yi,
+                            marker=marker,
+                            linestyle=linestyle,
+                            *args,
+                            **kwargs_c,
+                            label=None))
         else:
             if marker:
                 pyplot_kwargs['marker'] = marker
+            if linestyle
+                pyplot_kwargs['linestyle'] = linestyle
             plots.extend(ax.plot(f, yi, *args, **pyplot_kwargs))
 
     ax.set_xscale("function", functions=(hertz_to_erbscale, erbscale_to_hertz))
