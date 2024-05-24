@@ -210,7 +210,7 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     prevWidthHigher = 0.0f;
     curWidthHigher = 0.f;
     prevCutoffFreq = 500.0f;
-    smooth_factor = std::exp(-2*PI / (smoothingTimeMs * 0.001f * sampleRate));
+    smooth_factor = std::exp(-1.0f / (smoothingTimeMs * 0.001f * sampleRate));
 
 }
 

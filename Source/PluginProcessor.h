@@ -89,7 +89,7 @@ private:
     int density = 1000;
     float targetDecaydB = 10.;
     bool logDistribution = true;              //whether to concentrate VN impulses at the beginning
-    bool useOptVelvetFilters = false;         //whether to use optimised VN filters
+    bool useOptVelvetFilters = true;         //whether to use optimised VN filters
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;
