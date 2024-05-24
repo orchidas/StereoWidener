@@ -129,26 +129,15 @@ void StereoWidenerAudioProcessor::changeProgramName (int index, const juce::Stri
 }
 
 //read optimised VN file
-juce::String* StereoWidenerAudioProcessor::initialise_velvet_from_file(const juce::File &fileToRead){
-
-    if (! fileToRead.exists()){
-        throw std::runtime_error("File does not exist");
-        return NULL;  // file doesn't exist
-    }
-   
-    //filters for each channel are written in a new line
-    juce::String* opt_velvet_arrays = new juce::String[2];
-    if (std::unique_ptr<juce::FileInputStream> inputStream { fileToRead.createInputStream() })
-    {
-        int numLines = 0;
-        while (! inputStream->isExhausted())
-        {
-            auto line = inputStream->readNextLine();
-            opt_velvet_arrays[numLines++] = line;
-        }
-    }
+juce::StringArray StereoWidenerAudioProcessor::initialise_velvet_from_binary_file(){
+    auto input = juce::MemoryInputStream(BinaryData::opt_vn_filters_txt, BinaryData::opt_vn_filters_txtSize, false);
+    //read the entire text file as a string
+    const juce::String fileAsString = input.readEntireStreamAsString();
+    //break each line into a new string
+    auto opt_velvet_arrays = juce::StringArray::fromLines(juce::StringRef(fileAsString));
     return opt_velvet_arrays;
 }
+
 
 //==============================================================================
 void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -157,7 +146,7 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     // initialisation that you need..
     allpassCascade = new AllpassBiquadCascade[numChannels];
     velvetSequence = new VelvetNoise[numChannels];
-    //juce::String* opt_velvet_arrays = initialise_velvet_from_file(opt_vn_file);
+    juce::StringArray opt_velvet_arrays = initialise_velvet_from_binary_file();
     
     pan = new Panner[numFreqBands * numChannels];
     amp_preserve_filters = new LinkwitzCrossover* [numFreqBands * numChannels];
@@ -177,12 +166,12 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
         
         //initialise decorrelators
         allpassCascade[k].initialize(numBiquads, sampleRate, maxGroupDelayMs);
-//        if (useOptVelvetFilters){
-//            velvetSequence[k].initialize_from_string(opt_velvet_arrays[k]);
-//        }
-//        else{
+        if (useOptVelvetFilters){
+            velvetSequence[k].initialize_from_string(opt_velvet_arrays[k]);
+        }
+        else{
             velvetSequence[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
-//        }
+       }
         
         //initialise panner inputs
         pannerInputs[k] = 0.f;
