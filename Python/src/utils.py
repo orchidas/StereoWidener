@@ -364,17 +364,3 @@ def estimate_onsets_log_threshold(irs: npt.NDArray[np.float32],
 
     log_amp_irs = db(np.abs(irs))
     return np.apply_along_axis(log_thresh_1d, axis, log_amp_irs)
-
-def half_hann_fade(length: int, fade_out: bool = False) -> npt.NDArray:
-    """Generate a half Hann window for fading out or in a signal.
-
-    Args:
-        length (int): The length of the fade.
-        fade_out (bool, optional): If True, fade out, if False, fade in. Defaults to False.
-
-    Returns:
-        npt.NDArray: The half Hann window signal (one-dimensional)
-    """
-    n = np.linspace(start=0, stop=1, num=length)
-    fade: npt.NDArray = 0.5 - 0.5 * np.cos(np.pi * (n + int(fade_out)))
-    return fade
