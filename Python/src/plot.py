@@ -37,7 +37,7 @@ def semiaudplot(
     *args,
     n: int = 1024,
     marker: Optional[str] = None,
-    linestyle:Optional[str] = None,
+    linestyle: Optional[str] = None,
     ax: Optional[Axes] = None,
     interp: bool = False,
     **pyplot_kwargs,
@@ -111,7 +111,7 @@ def semiaudplot(
         else:
             if marker:
                 pyplot_kwargs['marker'] = marker
-            if linestyle
+            if linestyle:
                 pyplot_kwargs['linestyle'] = linestyle
             plots.extend(ax.plot(f, yi, *args, **pyplot_kwargs))
 

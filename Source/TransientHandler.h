@@ -49,6 +49,6 @@ private:
     //calculated with a buffer size of 256 samples
     enum{
         min_ms_hold = 80,
-        min_ms_inhibit = 20,
+        min_ms_inhibit = 50,
     };
     };
