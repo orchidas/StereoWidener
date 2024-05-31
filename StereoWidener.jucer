@@ -5,6 +5,10 @@
               pluginManufacturer="orchi" companyWebsite="www.orchi.com" cppLanguageStandard="17"
               pluginAUIsSandboxSafe="1">
   <MAINGROUP id="Cr37Rz" name="StereoWidener">
+    <GROUP id="{6D43D39E-3ADA-2FBE-7A72-B655219F9237}" name="Binary">
+      <FILE id="BepzFe" name="opt_vn_filters.txt" compile="0" resource="1"
+            file="Resources/opt_vn_filters.txt" xcodeResource="1"/>
+    </GROUP>
     <GROUP id="{7E19498E-394C-C938-D3D4-281C6825972C}" name="Source">
       <FILE id="cuZy8u" name="AllpassBiquadCascade.cpp" compile="1" resource="0"
             file="Source/AllpassBiquadCascade.cpp"/>
@@ -37,6 +41,15 @@
       <FILE id="ZfSSQt" name="VelvetNoise.h" compile="0" resource="0" file="Source/VelvetNoise.h"/>
       <FILE id="DxOQGt" name="Panner.h" compile="0" resource="0" file="../StereoWiidenerStandaloneDebug/Source/Panner.h"/>
       <FILE id="orhxUy" name="Panner.cpp" compile="1" resource="0" file="../StereoWiidenerStandaloneDebug/Source/Panner.cpp"/>
+      <FILE id="KB5mvZ" name="OnsetDetector.h" compile="0" resource="0" file="Source/OnsetDetector.h"/>
+      <FILE id="IF0nOG" name="OnsetDetector.cpp" compile="1" resource="0"
+            file="Source/OnsetDetector.cpp"/>
+      <FILE id="ALwQ4c" name="LeakyIntegrator.h" compile="0" resource="0"
+            file="Source/LeakyIntegrator.h"/>
+      <FILE id="V5IXnD" name="TransientHandler.cpp" compile="1" resource="0"
+            file="Source/TransientHandler.cpp"/>
+      <FILE id="IxAhnb" name="TransientHandler.h" compile="0" resource="0"
+            file="Source/TransientHandler.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>

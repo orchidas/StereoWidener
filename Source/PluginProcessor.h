@@ -14,6 +14,7 @@
 #include "LinkwitzCrossover.h"
 #include "ButterworthFilter.h"
 #include "AllpassBiquadCascade.h"
+#include "TransientHandler.h"
 //==============================================================================
 /**
 */
@@ -60,7 +61,8 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     inline float onePoleFilter(float input, float previous_output);
-    juce::String* initialise_velvet_from_file(const juce::File &filetoread);
+    juce::StringArray initialise_velvet_from_binary_file();
+
 
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
@@ -69,6 +71,7 @@ public:
     std::atomic<float>* cutoffFrequency;    //filterbank cutoff frequency
     std::atomic<float>* isAmpPreserve;      //calculations are amplitude or energy preserving
     std::atomic<float>* hasAllpassDecorrelation; //what decorrelator to use - VN or AP
+    std::atomic<float>* handleTransients;        //whether to have transient handline block
     const int numFreqBands = 2;
 
 private:
@@ -82,6 +85,8 @@ private:
     Panner* pan;
     LinkwitzCrossover** amp_preserve_filters;
     ButterworthFilter** energy_preserve_filters;
+    TransientHandler* transient_handler;
+    
     int density = 1000;
     float targetDecaydB = 10.;
     bool logDistribution = true;              //whether to concentrate VN impulses at the beginning
@@ -93,7 +98,6 @@ private:
     float prevWidthHigher, curWidthHigher;
     float prevCutoffFreq, curCutoffFreq;
     float smooth_factor;                       //one pole filter for parameter update
-    const juce::File opt_vn_file = juce::File("/Users/orchisamadas/Documents/AudioApps/StereoWidener/Resources/opt_vn_filter.txt");
     enum{
         vnLenMs = 15,
         smoothingTimeMs = 10,
@@ -102,5 +106,7 @@ private:
         prewarpFreqHz = 1000,
     };
     std::vector<std::vector<float>> inputData;
+    std::vector<std::vector<float>> outputData;
+    float** final_output;
 
 };

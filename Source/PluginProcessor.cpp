@@ -47,6 +47,10 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
         (juce::ParameterID{"hasAllpassDecorrelation",1},
          "Allpass decorrelation",
          0, 1, 0),
+    std::make_unique<juce::AudioParameterInt>
+      (juce::ParameterID{"handleTransients",1},
+       "Transient detection",
+       0, 1, 0),
     })
 #endif
 {
@@ -56,6 +60,8 @@ StereoWidenerAudioProcessor::StereoWidenerAudioProcessor()
     cutoffFrequency = parameters.getRawParameterValue("cutoffFrequency");
     isAmpPreserve = parameters.getRawParameterValue("isAmpPreserve");
     hasAllpassDecorrelation = parameters.getRawParameterValue("hasAllpassDecorrelation");
+    handleTransients = parameters.getRawParameterValue("handleTransients");
+
 }
 
 StereoWidenerAudioProcessor::~StereoWidenerAudioProcessor(){}
@@ -123,26 +129,15 @@ void StereoWidenerAudioProcessor::changeProgramName (int index, const juce::Stri
 }
 
 //read optimised VN file
-juce::String* StereoWidenerAudioProcessor::initialise_velvet_from_file(const juce::File &fileToRead){
-
-    if (! fileToRead.exists()){
-        throw std::runtime_error("File does not exist");
-        return NULL;  // file doesn't exist
-    }
-   
-    //filters for each channel are written in a new line
-    juce::String* opt_velvet_arrays = new juce::String[2];
-    if (std::unique_ptr<juce::FileInputStream> inputStream { fileToRead.createInputStream() })
-    {
-        int numLines = 0;
-        while (! inputStream->isExhausted())
-        {
-            auto line = inputStream->readNextLine();
-            opt_velvet_arrays[numLines++] = line;
-        }
-    }
+juce::StringArray StereoWidenerAudioProcessor::initialise_velvet_from_binary_file(){
+    auto input = juce::MemoryInputStream(BinaryData::opt_vn_filters_txt, BinaryData::opt_vn_filters_txtSize, false);
+    //read the entire text file as a string
+    const juce::String fileAsString = input.readEntireStreamAsString();
+    //break each line into a new string
+    auto opt_velvet_arrays = juce::StringArray::fromLines(juce::StringRef(fileAsString));
     return opt_velvet_arrays;
 }
+
 
 //==============================================================================
 void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -151,7 +146,7 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     // initialisation that you need..
     allpassCascade = new AllpassBiquadCascade[numChannels];
     velvetSequence = new VelvetNoise[numChannels];
-    //juce::String* opt_velvet_arrays = initialise_velvet_from_file(opt_vn_file);
+    juce::StringArray opt_velvet_arrays = initialise_velvet_from_binary_file();
     
     pan = new Panner[numFreqBands * numChannels];
     amp_preserve_filters = new LinkwitzCrossover* [numFreqBands * numChannels];
@@ -159,22 +154,30 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     gain_multiplier = new float[numFreqBands];
     temp_output = new float[numFreqBands];
     pannerInputs = new float[numChannels];
+    transient_handler = new TransientHandler[numChannels];
+    final_output = new float* [numChannels];
+    
     int count = 0;
 
     for(int k = 0; k < numChannels; k++){
+        //initialise transient handler
+        if (handleTransients)
+            transient_handler[k].prepare(samplesPerBlock, sampleRate);
         
         //initialise decorrelators
         allpassCascade[k].initialize(numBiquads, sampleRate, maxGroupDelayMs);
         
-//        if (useOptVelvetFilters){
-//            velvetSequence[k].initialize_from_string(opt_velvet_arrays[k]);
-//        }
-//        else{
+        if (useOptVelvetFilters){
+            velvetSequence[k].initialize_from_string(opt_velvet_arrays[k]);
+        }
+        else{
             velvetSequence[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
-//        }
+        }
         
         //initialise panner inputs
         pannerInputs[k] = 0.f;
+        //final output buffer
+        final_output[k] = new float[samplesPerBlock];
 
         for (int i = 0; i < numFreqBands; i++){
             temp_output[i] = 0.0;
@@ -201,13 +204,14 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
         }
     }
     
-    inputData = std::vector<std::vector<float>>(samplesPerBlock, std::vector<float>(numChannels, 0.0f));
+    inputData = std::vector<std::vector<float>>(numChannels, std::vector<float>(samplesPerBlock, 0.0f));
+    outputData = std::vector<std::vector<float>>(numChannels, std::vector<float>(samplesPerBlock, 0.0f));
     prevWidthLower = 0.f;
     curWidthLower = 0.f;
     prevWidthHigher = 0.0f;
     curWidthHigher = 0.f;
     prevCutoffFreq = 500.0f;
-    smooth_factor = std::exp(-2*PI / (smoothingTimeMs * 0.001f * sampleRate));
+    smooth_factor = std::exp(-1.0f / (smoothingTimeMs * 0.001f * sampleRate));
 
 }
 
@@ -221,6 +225,7 @@ void StereoWidenerAudioProcessor::releaseResources()
     delete [] gain_multiplier;
     delete [] allpassCascade;
     delete [] velvetSequence;
+    delete [] transient_handler;
     
     for (int i = 0; i < numChannels * numFreqBands; i++){
         delete [] amp_preserve_filters[i];
@@ -312,7 +317,7 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
         const float* channelInData = buffer.getReadPointer(chan, 0);
 
         for (int i = 0; i < numSamples; i++){
-            inputData[i][chan] = channelInData[i];
+            inputData[chan][i] = channelInData[i];
         }
     }
     
@@ -325,10 +330,10 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
             
             //decorrelate input channel by convolving with VN sequence
             if (*hasAllpassDecorrelation)
-                decorr_output = allpassCascade[chan].process(inputData[i][chan]);
+                decorr_output = allpassCascade[chan].process(inputData[chan][i]);
             //or by passing through allpass cascade
             else
-                decorr_output = velvetSequence[chan].process(inputData[i][chan]);
+                decorr_output = velvetSequence[chan].process(inputData[chan][i]);
             
             //process in frequency bands
             for(int k = 0; k < numFreqBands; k++){
@@ -336,11 +341,11 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 float filtered_decorr_output = 0.0f;
                 //pass input and decorrelation output through filterbank
                 if (*isAmpPreserve){
-                    filtered_input = amp_preserve_filters[k][chan].process(inputData[i][chan]);
+                    filtered_input = amp_preserve_filters[k][chan].process(inputData[chan][i]);
                     filtered_decorr_output = amp_preserve_filters[numFreqBands + k][chan].process(decorr_output);
                 }
                 else{
-                    filtered_input = energy_preserve_filters[k][chan].process(inputData[i][chan]);
+                    filtered_input = energy_preserve_filters[k][chan].process(inputData[chan][i]);
                     filtered_decorr_output = energy_preserve_filters[numFreqBands + k][chan].process(decorr_output);
                 }
 
@@ -349,8 +354,19 @@ void StereoWidenerAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer
                 float panner_output = pan[count++].process(pannerInputs);
                 output += panner_output;
             }
-
-            buffer.setSample(chan, i, output);
+            outputData[chan][i] = output;
+            if (! *handleTransients)
+                buffer.setSample(chan, i, output);
+        }
+    }
+    
+    // transient handling logic
+    if (*handleTransients){
+        for(int chan = 0; chan < totalNumOutputChannels; chan++){
+            final_output[chan] = transient_handler[chan].process(&inputData[chan][0], &outputData[chan][0]);
+            for (int i = 0; i < numSamples; i++){
+                buffer.setSample(chan, i, final_output[chan][i]);
+            }
         }
     }
 }
