@@ -166,12 +166,13 @@ void StereoWidenerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
         
         //initialise decorrelators
         allpassCascade[k].initialize(numBiquads, sampleRate, maxGroupDelayMs);
+        
         if (useOptVelvetFilters){
             velvetSequence[k].initialize_from_string(opt_velvet_arrays[k]);
         }
         else{
             velvetSequence[k].initialize(sampleRate, vnLenMs, density, targetDecaydB, logDistribution);
-       }
+        }
         
         //initialise panner inputs
         pannerInputs[k] = 0.f;

@@ -63,6 +63,7 @@ public:
     inline float onePoleFilter(float input, float previous_output);
     juce::StringArray initialise_velvet_from_binary_file();
 
+
     //Input parameters
     juce::AudioProcessorValueTreeState parameters;
     std::atomic<float>* widthLower;         //stereo width (0 - original, 100 - max widening)
@@ -89,7 +90,7 @@ private:
     int density = 1000;
     float targetDecaydB = 10.;
     bool logDistribution = true;              //whether to concentrate VN impulses at the beginning
-    bool useOptVelvetFilters = true;         //whether to use optimised VN filters
+    bool useOptVelvetFilters = false;         //whether to use optimised VN filters
     float* pannerInputs;
     float* temp_output;
     float* gain_multiplier;

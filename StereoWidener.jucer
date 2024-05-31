@@ -2,7 +2,8 @@
 
 <JUCERPROJECT id="cO8wVQ" name="StereoWidener" projectType="audioplug" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1"
-              pluginManufacturer="orchi" companyWebsite="www.orchi.com" cppLanguageStandard="17">
+              pluginManufacturer="orchi" companyWebsite="www.orchi.com" cppLanguageStandard="17"
+              pluginAUIsSandboxSafe="1">
   <MAINGROUP id="Cr37Rz" name="StereoWidener">
     <GROUP id="{6D43D39E-3ADA-2FBE-7A72-B655219F9237}" name="Binary">
       <FILE id="BepzFe" name="opt_vn_filters.txt" compile="0" resource="1"
