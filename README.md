@@ -9,7 +9,7 @@ The filterbank consists of a lowpass and highpass in cascade, which can be energ
 </p>
 
 ### For MacOS users
-Copy the AU/VST3 build (in Builds/MacOSX/build/Debug) to /Library/Audio/Plugins/Components or /Library/Audio/Plugins/VST3. These are the .component and vst3 files respectively. The next time you restart your DAW the plugin should show up under the developer name **orchi**.
+Use the installer included with the release. The next time you restart your DAW the plugin should show up under the developer name **orchi**.
 
 ### Theory
 Coming soon...
