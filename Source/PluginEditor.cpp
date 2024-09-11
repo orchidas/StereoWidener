@@ -76,8 +76,8 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
     
     //add labels
     addAndMakeVisible(isAmpPreserveLabel);
-    isAmpPreserveLabel.setText ("Amplitude preserve", juce::dontSendNotification);
-    isAmpPreserveLabel.setFont(juce::Font ("Times New Roman", 15.0f, juce::Font::plain));
+    isAmpPreserveLabel.setText ("Amplitude (on) / Energy preserve (off)", juce::dontSendNotification);
+    isAmpPreserveLabel.setFont(juce::Font ("Times New Roman", 12.0f, juce::Font::plain));
     
     // add toggle button for choosing decorrelator
     addAndMakeVisible(hasAllpassDecorrelation);
@@ -98,8 +98,8 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
     
     //add labels
     addAndMakeVisible(hasAllpassDecorrelationLabel);
-    hasAllpassDecorrelationLabel.setText ("Allpass decorrelation", juce::dontSendNotification);
-    hasAllpassDecorrelationLabel.setFont(juce::Font ("Times New Roman", 15.0f, juce::Font::plain));
+    hasAllpassDecorrelationLabel.setText ("Allpass (on) / Velvet decorrelation (off)", juce::dontSendNotification);
+    hasAllpassDecorrelationLabel.setFont(juce::Font ("Times New Roman", 12.0f, juce::Font::plain));
     
     
     
@@ -123,8 +123,8 @@ StereoWidenerAudioProcessorEditor::StereoWidenerAudioProcessorEditor (StereoWide
     //add labels
     addAndMakeVisible(handleTransientsLabel);
     handleTransientsLabel.setText ("Transient detection", juce::dontSendNotification);
-    handleTransientsLabel.setFont(juce::Font ("Transient detection", 15.0f, juce::Font::plain));
-    handleTransientsLabel.setFont(juce::Font ("Times New Roman", 15.0f, juce::Font::plain));
+    handleTransientsLabel.setFont(juce::Font ("Transient detection", 12.0f, juce::Font::plain));
+    handleTransientsLabel.setFont(juce::Font ("Times New Roman", 12.0f, juce::Font::plain));
 }
     
 StereoWidenerAudioProcessorEditor::~StereoWidenerAudioProcessorEditor()
