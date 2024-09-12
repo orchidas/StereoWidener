@@ -12,4 +12,4 @@ The filterbank consists of a lowpass and highpass in cascade, which can be energ
 Use the installer included with the release. The next time you restart your DAW the plugin should show up under the developer name **orchi**.
 
 ### Theory
-Coming soon...
+The details of this plugin are outlined in the paper <b> An open source stereo widening plugin </b> - Orchisama Das in Proc. of International Conference on Digital Audio Effects, DAFx 2024.
