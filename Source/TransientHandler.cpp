@@ -27,8 +27,9 @@ void TransientHandler::prepare_xfade_windows(){
     
     for(int i = 0; i < buffer_size; i++){
         //half hann windows
-        xfade_in_win[i] = 0.5*(1 - std::cos(PI * i/buffer_size));
-        xfade_out_win[i] = 0.5*(1 - std::cos(PI * (i/buffer_size + 1)));
+        float phase = static_cast<float>(i) / (buffer_size - 1);
+        xfade_in_win[i] = 0.5f * (1.0f - std::cos(PI * phase));
+        xfade_out_win[i] = 1.0f - xfade_in_win[i];
         xfade_buffer[i] = 0.0f;
         output_buffer[i] = 0.0f;
     }
